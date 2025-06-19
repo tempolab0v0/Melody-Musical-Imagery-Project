@@ -9,44 +9,37 @@
         padding-top: 50px;
       }
       video {
-        width: 800px;
+        width: 1000px;
         margin-bottom: 20px;
       }
     </style>
   </head>
   <body>
-    <video id="myVideo" src="Animation Video.mp4" controls></video>
-    <audio id="myAudio" controls></audio>
+    <video id="myVideo" src="Animation Video.mp4" controls playsinline></video>
+    <audio id="myAudio"></audio>
+
     <br />
-    <button onclick="playMedia()">Play Video + Audio</button>
+    <button onclick="loadAndPlay()">Play Video + Audio from CSV</button>
 
     <script>
-      let audioFiles = [];
-      let currentAudioIndex = 0;
-
-      fetch('audio_files.csv')
-        .then(response => response.text())
-        .then(csv => {
-          audioFiles = csv.trim().split('\n').map(name => name.trim());
-          if (audioFiles.length > 0) {
-            document.getElementById('myAudio').src = audioFiles[0];
-          }
-        })
-        .catch(err => console.error('Failed to load CSV:', err));
-
-      function playMedia() {
-        const video = document.getElementById("myVideo");
+      async function loadAndPlay() {
         const audio = document.getElementById("myAudio");
+        const video = document.getElementById("myVideo");
 
-        if (audioFiles.length > 0) {
-          audio.src = audioFiles[currentAudioIndex];
+        try {
+          const response = await fetch("audio_files.csv");
+          const text = await response.text();
+
+          const lines = text.trim().split("\n");
+          const firstAudio = lines[1].trim(); 
+
+          audio.src = firstAudio;
+
+          await audio.play();
+          await video.play();
+        } catch (error) {
+          console.error("Error loading audio from CSV:", error);
         }
-
-        audio.load();
-        audio.oncanplaythrough = () => {
-          video.play();
-          audio.play().catch(e => console.log("Audio failed to play:", e));
-        };
       }
     </script>
   </body>
