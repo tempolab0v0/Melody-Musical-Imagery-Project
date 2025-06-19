@@ -34,14 +34,20 @@
           const lines = text.trim().split("\n");
           const firstAudio = lines[1].trim(); 
 
+          console.log("Loading audio file:", audioFile);  // <-- Debug check
+
+      if (!audioFile) {
+        throw new Error("CSV missing audio filename.");
+      }
           audio.src = firstAudio;
 
-          await audio.play();
-          await video.play();
-        } catch (error) {
-          console.error("Error loading audio from CSV:", error);
-        }
-      }
-    </script>
+           await audio.load();
+
+      await Promise.all([video.play(), audio.play()]);
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  }
+</script>
   </body>
 </html>
