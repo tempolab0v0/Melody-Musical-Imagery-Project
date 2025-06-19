@@ -16,31 +16,40 @@
   </head>
   <body>
     <video id="myVideo" src="Animation Video.mp4" controls playsinline></video>
-    <audio id="myAudio"></audio>
+    <audio id="myAudio" controls></audio>
 
     <br />
-    <button onclick="loadAndPlay()">Play Video + Audio from CSV</button>
+    <button id="playButton">Play Video + Audio from CSV</button>
 
     <script>
-      async function loadAndPlay() {
+      document.getElementById("playButton").addEventListener("click", async function ()) {
         const audio = document.getElementById("myAudio");
         const video = document.getElementById("myVideo");
 
         try {
           const response = await fetch("audio_files.csv");
+          if (!response.ok) throw new Error("CSV file not found");
+          
           const text = await response.text();
-
           const lines = text.trim().split("\n");
-          const firstAudio = lines[1].trim(); 
 
-          audio.src = firstAudio;
+          if (lines.length < 2) throw new Error("No audio files listed");
 
-          await audio.play();
-          await video.play();
+          const audioFile = lines[1].trim(); // Skip header
+
+          console.log("Loading audio:", audioFile);
+          audio.src = audioFile;
+
+          // Wait until audio is ready to play
+          audio.load();
+
+          // Play both audio and video
+          await Promise.all([audio.play(), video.play()]);
         } catch (error) {
-          console.error("Error loading audio from CSV:", error);
+          console.error("Error playing media:", error);
+          alert("Failed to load or play media. Check console for details.");
         }
-      }
+      });
     </script>
   </body>
 </html>
