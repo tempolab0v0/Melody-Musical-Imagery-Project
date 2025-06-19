@@ -1,53 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="jspsych.js"></script>
-<link href="jspsych.css" rel="stylesheet" type="text/css" />
-<style>
-body {
-text-align: center;
-padding-top: 50px;
-}
-video {
-width: 1000px;
-margin-bottom: 20px;
-}
-</style>
+  <script src="jspsych/dist/jspsych.js"></script>
+  <link href="jspsych/dist/jspsych.css" rel="stylesheet" type="text/css" />
+  <style>
+    body {
+      text-align: center;
+      padding-top: 50px;
+    }
+    video {
+      width: 1000px;
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
-<video id="myVideo" src="Animation Video.mp4" controls playsinline></video>
-<audio id="myAudio" controls></audio>
+  <video id="myVideo" src="Animation Video.mp4" controls playsinline></video>
+  <audio id="myAudio" controls></audio>
 
-<br />
-<button id="playButton">Play Video + Audio from CSV</button>
+  <br />
+  <button id="playButton">Play Video + Random Audio</button>
 
-<script>
-document.getElementById("playButton").addEventListener("click", async function () {
-const audio = document.getElementById("myAudio");
-const video = document.getElementById("myVideo");
+  <script>
+    document.getElementById("playButton").addEventListener("click", async function () {
+      const audio = document.getElementById("myAudio");
+      const video = document.getElementById("myVideo");
 
-try {
-const response = await fetch("audio_files.csv");
-if (!response.ok) throw new Error("CSV file not found");
+      try {
+        const response = await fetch("audio_files.csv");
+        if (!response.ok) throw new Error("CSV file not found");
 
-const text = await response.text();
-const lines = text.trim().split("\n");
+        const text = await response.text();
+        const lines = text.trim().split("\n");
 
-if (lines.length < 2) throw new Error("No audio files listed");
+        if (lines.length < 2) throw new Error("No audio files listed");
 
-const filenames = lines.slice(1).map(line => line.trim().replace(/^"|"$/g, ''));
-const randomFile = filenames[Math.floor(Math.random() * filenames.length)];
+        // Remove header row and clean file names
+        const filenames = lines.slice(1).map(line =>
+          line.trim().replace(/^"|"$/g, '') // Remove quotes if present
+        );
 
-console.log("Randomly selected audio:", randomFile);
-    audio.src = randomFile;
+        // Pick a random audio file
+        const randomFile = filenames[Math.floor(Math.random() * filenames.length)];
+        console.log("Random audio selected:", randomFile);
 
-    audio.load();
-    video.currentTime = 0;
-    audio.currentTime = 0;
+        audio.src = randomFile;
+        audio.load();
 
-    await Promise.all([audio.play(), video.play()]);
-  } catch (error) {
-    console.error("Error playing media:", error);
-    alert("Failed to load or play media. Check console for details.");
-  }
-});
+        // Reset video/audio and play both
+        video.currentTime = 0;
+        audio.currentTime = 0;
+        await Promise.all([audio.play(), video.play()]);
+
+      } catch (error) {
+        console.error("Error playing media:", error);
+        alert("Failed to load or play media. Check console for details.");
+      }
+    });
+  </script>
+</body>
+</html>
