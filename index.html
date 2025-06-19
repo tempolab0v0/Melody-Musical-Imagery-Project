@@ -1,49 +1,53 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <script src="jspsych.js"></script>
-    <script src="jspsych-video.js"></script>
-    <script src="jspsych-audio-keyboard-response.js"></script>
-    <link href="jspsych.css" rel="stylesheet" type="text/css" />
-    <style>
-      body { text-align: center; padding-top: 50px; }
-      video { width: 1000px; margin-bottom: 20px; }
-    </style>
-  </head>
-  <body>
-    <button id="playButton">Play Video + Audio from CSV</button>
-    <div id="jspsych-target"></div>
+<head>
+<script src="jspsych/dist/jspsych.js"></script>
+<link href="jspsych/dist/jspsych.css" rel="stylesheet" type="text/css" />
+<style>
+body {
+text-align: center;
+padding-top: 50px;
+}
+video {
+width: 1000px;
+margin-bottom: 20px;
+}
+</style>
+</head>
+<body>
+<video id="myVideo" src="Animation Video.mp4" controls playsinline></video>
+<audio id="myAudio" controls></audio>
 
-    <script>
-      document.getElementById("playButton").addEventListener("click", function () {
-        fetch("audio_files.csv")
-          .then(response => response.text())
-          .then(text => {
-            const lines = text.trim().split("\n");
-            if (lines.length < 2) throw new Error("No audio files listed");
-            const audioFile = lines[1].trim();
+<br />
+<button id="playButton">Play Video + Audio from CSV</button>
 
-            var timeline = [];
+<script>
+document.getElementById("playButton").addEventListener("click", async function ()) {
+const audio = document.getElementById("myAudio");
+const video = document.getElementById("myVideo");
 
-            timeline.push({
-              type: 'video',
-              sources: ['Animation Video.mp4'],
-              width: 1000,
-              autoplay: true,
-              controls: true,
-              prompt: '<br><audio id="myAudio" src="' + audioFile + '" controls autoplay></audio>'
-            });
+try {
+const response = await fetch("audio_files.csv");
+if (!response.ok) throw new Error("CSV file not found");
 
-            jsPsych.init({
-              timeline: timeline,
-              display_element: 'jspsych-target'
-            });
-          })
-          .catch(error => {
-            console.error("Error loading CSV or media:", error);
-            alert("Failed to load or play media. Check console for details.");
-          });
-      });
-    </script>
-  </body>
+const text = await response.text();
+const lines = text.trim().split("\n");
+
+if (lines.length < 2) throw new Error("No audio files listed");
+
+const audioFile = lines[1].trim();
+
+console.log("Loading audio:", audioFile);
+audio.src = audioFile;
+
+audio.load();
+
+await Promise.all([audio.play(), video.play()]);
+} catch (error) {
+console.error("Error playing media:", error);
+alert("Failed to load or play media. Check console for details.");
+}
+});
+</script>
+</body>
 </html>
