@@ -35,15 +35,13 @@
 
           if (lines.length < 2) throw new Error("No audio files listed");
 
-          const audioFile = lines[1].trim(); // Skip header
+          const audioFile = lines[1].trim(); 
 
           console.log("Loading audio:", audioFile);
           audio.src = audioFile;
 
-          // Wait until audio is ready to play
           audio.load();
 
-          // Play both audio and video
           await Promise.all([audio.play(), video.play()]);
         } catch (error) {
           console.error("Error playing media:", error);
