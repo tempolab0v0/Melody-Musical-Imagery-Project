@@ -9,7 +9,7 @@
         padding-top: 50px;
       }
       video {
-        width: 1500px;
+        width: 800px;
         margin-bottom: 20px;
       }
     </style>
@@ -24,13 +24,11 @@
       let audioFiles = [];
       let currentAudioIndex = 0;
 
-      // Load CSV
       fetch('audio_files.csv')
         .then(response => response.text())
         .then(csv => {
-          audioFiles = csv.trim().split('\n');
+          audioFiles = csv.trim().split('\n').map(name => name.trim());
           if (audioFiles.length > 0) {
-            // Load first audio
             document.getElementById('myAudio').src = audioFiles[0];
           }
         })
@@ -40,15 +38,15 @@
         const video = document.getElementById("myVideo");
         const audio = document.getElementById("myAudio");
 
-        // Load the current audio file (in case it changed)
         if (audioFiles.length > 0) {
           audio.src = audioFiles[currentAudioIndex];
         }
 
-        // Play both media
-        Promise.all([video.play(), audio.play()]).catch(function (e) {
-          console.log("Playback failed:", e);
-        });
+        audio.load();
+        audio.oncanplaythrough = () => {
+          video.play();
+          audio.play().catch(e => console.log("Audio failed to play:", e));
+        };
       }
     </script>
   </body>
