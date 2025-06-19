@@ -35,19 +35,19 @@ const lines = text.trim().split("\n");
 
 if (lines.length < 2) throw new Error("No audio files listed");
 
-const audioFile = lines[1].trim();
+const filenames = lines.slice(1).map(line => line.trim().replace(/^"|"$/g, ''));
+const randomFile = filenames[Math.floor(Math.random() * filenames.length)];
 
-console.log("Loading audio:", audioFile);
-audio.src = audioFile;
+console.log("Randomly selected audio:", randomFile);
+    audio.src = randomFile;
 
-audio.load();
+    audio.load();
+    video.currentTime = 0;
+    audio.currentTime = 0;
 
-await Promise.all([audio.play(), video.play()]);
-} catch (error) {
-console.error("Error playing media:", error);
-alert("Failed to load or play media. Check console for details.");
-}
+    await Promise.all([audio.play(), video.play()]);
+  } catch (error) {
+    console.error("Error playing media:", error);
+    alert("Failed to load or play media. Check console for details.");
+  }
 });
-</script>
-</body>
-</html>
