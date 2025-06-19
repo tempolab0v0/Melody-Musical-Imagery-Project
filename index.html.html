@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="jspsych/dist/jspsych.js"></script>
+    <link href="jspsych/dist/jspsych.css" rel="stylesheet" type="text/css" />
+    <style>
+      body {
+        text-align: center;
+        padding-top: 50px;
+      }
+      video {
+        width: 700px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Video element -->
+    <video id="myVideo" src="Animation video.mp4" controls></video>
+
+    <!-- Audio element -->
+    <audio id="myAudio" src="Twinkle_original.mp3" loop></audio>
+
+    <br />
+    <button onclick="playMedia()">Play Video + Audio</button>
+
+    <script>
+      function playMedia() {
+        const video = document.getElementById("myVideo");
+        const audio = document.getElementById("myAudio");
+
+        // Start both media
+        Promise.all([video.play(), audio.play()]).catch(function (e) {
+          console.log("Playback failed:", e);
+        });
+      }
+    </script>
+  </body>
+</html>
