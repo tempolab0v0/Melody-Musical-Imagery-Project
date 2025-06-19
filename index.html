@@ -15,39 +15,19 @@
     </style>
   </head>
   <body>
-
-    <video id="myVideo" src="Animation Video.mp4" controls playsinline></video>
-    <audio id="myAudio"></audio>
-
+    <video id="myVideo" src="Animation Video.mp4" controls></video>
+    <audio id="myAudio" src="Twinkle_gap_+3ST.mp3"></audio>
     <br />
-    <button onclick="loadAndPlay()">Play Video + Audio from CSV</button>
-
+    <button onclick="playMedia()">Play Video + Audio</button>
     <script>
-      async function loadAndPlay() {
-        const audio = document.getElementById("myAudio");
+      function playMedia() {
         const video = document.getElementById("myVideo");
-
-        try {
-          const response = await fetch("audio_files.csv");
-          const text = await response.text();
-
-          const lines = text.trim().split("\n");
-          const firstAudio = lines[1].trim(); 
-
-          console.log("Loading audio file:", audioFile);  // <-- Debug check
-
-      if (!audioFile) {
-        throw new Error("CSV missing audio filename.");
+        const audio = document.getElementById("myAudio");
+        // Start both media
+        Promise.all([video.play(), audio.play()]).catch(function (e) {
+          console.log("Playback failed:", e);
+        });
       }
-          audio.src = firstAudio;
-
-           await audio.load();
-
-      await Promise.all([video.play(), audio.play()]);
-    } catch (err) {
-      console.error("Error:", err);
-    }
-  }
-</script>
+    </script>
   </body>
 </html>
