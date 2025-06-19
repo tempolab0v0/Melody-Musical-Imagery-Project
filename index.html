@@ -5,25 +5,35 @@
     <link href="jspsych/dist/jspsych.css" rel="stylesheet" type="text/css" />
     <style>
       body {
-        text-align: center;
-        padding-top: 50px;
-      }
-      video {
-        width: 1500px;
-        margin-bottom: 20px;
-      }
-    </style>
-  </head>
-  <body>
+
     <video id="myVideo" src="Animation Video.mp4" controls></video>
-    <audio id="myAudio" src="Twinkle_gap_+3ST.mp3"></audio>
+    <audio id="myAudio" controls></audio>
     <br />
     <button onclick="playMedia()">Play Video + Audio</button>
+
     <script>
+      let audioFiles = [];
+      let currentAudioIndex = 0;
+
+      fetch('audio_files.csv')
+        .then(response => response.text())
+        .then(csv => {
+          audioFiles = csv.trim().split('\n');
+          if (audioFiles.length > 0) {
+      
+            document.getElementById('myAudio').src = audioFiles[0];
+          }
+        })
+        .catch(err => console.error('Failed to load CSV:', err));
+
       function playMedia() {
         const video = document.getElementById("myVideo");
         const audio = document.getElementById("myAudio");
-        // Start both media
+
+        if (audioFiles.length > 0) {
+          audio.src = audioFiles[currentAudioIndex];
+        }
+
         Promise.all([video.play(), audio.play()]).catch(function (e) {
           console.log("Playback failed:", e);
         });
