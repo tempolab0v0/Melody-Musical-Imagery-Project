@@ -74,7 +74,6 @@ document.getElementById("playButton").addEventListener("click", async function (
   hideAll();
 
   try {
-    // Load and parse CSV
     const response = await fetch("audio_files.csv");
     if (!response.ok) throw new Error("CSV file not found");
     const text = await response.text();
@@ -103,10 +102,10 @@ document.getElementById("playButton").addEventListener("click", async function (
     const postStillSec = testSec - video2Sec;
 
     if (preStillSec < 0 || gapStillSec < 0 || postStillSec < 0) {
-      throw new Error("Timing error: Stillframe durations calculated as negative. Check CSV values.");
+      throw new Error(`Timing error: preStillSec=${preStillSec}, gapStillSec=${gapStillSec}, postStillSec=${postStillSec}`);
     }
 
-    // Assign start/end times
+    // Assign exact visual timing
     let t = 0;
     visuals[0].start = t;
     visuals[0].end = t += preStillSec;
@@ -128,14 +127,14 @@ document.getElementById("playButton").addEventListener("click", async function (
 
     const totalSec = visuals[5].end;
 
-    // Prepare audio
+    // Load audio
     audio.src = audioURL;
     await new Promise((resolve, reject) => {
       audio.oncanplaythrough = resolve;
       audio.onerror = () => reject("Audio failed to load: " + audioURL);
     });
 
-    // Sync visuals with audio
+    // Start sync
     let currentVisual = null;
     function updateVisuals() {
       const t = audio.currentTime;
