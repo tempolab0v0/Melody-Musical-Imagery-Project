@@ -1,28 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="jspsych.js"></script>
-<link href="jspsych.css" rel="stylesheet" type="text/css" />
-<style>
-body {
-text-align: center;
-padding-top: 50px;
-}
-video {
-width: 1500px;
-margin-bottom: 20px;
-}
-</style>
+  <script src="jspsych.js"></script>
+  <link href="jspsych.css" rel="stylesheet" />
+  <style>
+    body {
+      text-align: center;
+      padding-top: 50px;
+    }
+    video, img {
+      width: 800px;
+      display: none;
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
 
+<!-- Stillframe and videos -->
 <img id="stillframe" src="stillframe.png" />
-<video id="video1" src="video1.mp4" playsinline></video>
-<video id="gapVideo" src="gapVideo.mp4" playsinline></video>
-<video id="video2" src="video2.mp4" playsinline></video>
+<video id="video1" src="video1.mp4" playsinline preload="auto"></video>
+<video id="gapVideo" src="gapVideo.mp4" playsinline preload="auto"></video>
+<video id="video2" src="video2.mp4" playsinline preload="auto"></video>
 
-<audio id="myAudio" hidden></audio>
-
+<!-- Audio -->
+<audio id="myAudio" hidden preload="auto"></audio>
 <br />
 <button id="playButton">Play Synced Stimuli</button>
 
@@ -34,8 +36,19 @@ document.getElementById("playButton").addEventListener("click", async function (
   const vGap = document.getElementById("gapVideo");
   const v2 = document.getElementById("video2");
 
-try {
-    // Fetch and parse CSV
+  function hideAll() {
+    [v1, vGap, v2, still].forEach(el => {
+      el.style.display = "none";
+      if (el.tagName === "VIDEO") {
+        el.pause();
+        el.currentTime = 0;
+      }
+    });
+  }
+
+  hideAll(); // Hide all immediately
+
+  try {
     const response = await fetch("audio_files.csv");
     if (!response.ok) throw new Error("CSV file not found");
 
@@ -43,67 +56,63 @@ try {
     const lines = text.trim().split("\n");
     const rows = lines.slice(1).map(line => line.split(","));
 
+    if (rows.length === 0) throw new Error("No rows found in CSV");
+
     const randomRow = rows[Math.floor(Math.random() * rows.length)];
     const [filename, original, gap, testAudio, total] = randomRow.map(x => x.replace(/^"|"$/g, '').trim());
 
-    // Parse durations
     const originalSec = parseFloat(original);
     const gapSec = parseFloat(gap);
     const testSec = parseFloat(testAudio);
     const totalSec = parseFloat(total);
 
-    // Calculate timing
     const preGapSec = (totalSec - originalSec - gapSec) / 2;
     const postGapSec = preGapSec;
     const video1Sec = testSec / 2;
     const video2Sec = testSec / 2;
 
-    // Load and play audio
+    console.log(`Using audio: ${filename}`);
+    console.log({ preGapSec, video1Sec, gapSec, video2Sec, postGapSec });
+
+    // Load audio file
     audio.src = filename;
-    audio.load();
+    await new Promise((resolve, reject) => {
+      audio.oncanplaythrough = resolve;
+      audio.onerror = () => reject("Failed to load audio: " + filename);
+    });
+
     await audio.play();
 
-    // Helper to hide all video/image elements
-    function hideAll() {
-      [v1, vGap, v2, still].forEach(el => el.style.display = "none");
-      [v1, vGap, v2].forEach(el => {
-        el.pause();
-        el.currentTime = 0;
-      });
-    }
-
-    // Start with stillframe (pre-gap)
+    // 1. Pre-gap: show stillframe
     hideAll();
     still.style.display = "block";
 
-    // ⏱ Pre-gap hold
     setTimeout(() => {
-      // ▶️ Play Video 1
+      // 2. Video 1
       hideAll();
       v1.style.display = "block";
       v1.play();
 
       setTimeout(() => {
-        // ⏸ Gap stillframe or video
+        // 3. Gap Video
         hideAll();
         vGap.style.display = "block";
         vGap.play();
 
         setTimeout(() => {
-          // ▶️ Play Video 2
+          // 4. Video 2
           hideAll();
           v2.style.display = "block";
           v2.play();
 
           setTimeout(() => {
-            // 🧊 Post-gap stillframe
+            // 5. Post-gap stillframe
             hideAll();
             still.style.display = "block";
 
             setTimeout(() => {
-              // Done!
-              hideAll();
-              console.log("All media playback completed.");
+              hideAll(); // All done
+              console.log("Finished all media.");
             }, postGapSec * 1000);
 
           }, video2Sec * 1000);
@@ -115,8 +124,8 @@ try {
     }, preGapSec * 1000);
 
   } catch (err) {
-    console.error("Error:", err);
-    alert("Failed to play media. Check console for details.");
+    console.error("Error during playback:", err);
+    alert("Failed to play media. Check the console for details.");
   }
 });
 </script>
