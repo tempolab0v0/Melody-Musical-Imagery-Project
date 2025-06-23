@@ -5,48 +5,60 @@
   <title>Melody's Mystery Elevator</title>
   <link href="jspsych.css" rel="stylesheet" />
   <script src="jspsych.js"></script>
-<style>
+  <style>
     body {
       text-align: center;
-      padding-top: 50px;
+      margin: 0;
       background-color: white;
     }
     #visual-container {
-      width: 1200px;
-      height: 850px;
-      margin: auto;
+      width: 90vw;
+      height: 80vh;
+      max-width: 1400px;
+      max-height: 950px;
+      margin: 40px auto 0 auto;
       background-color: white;
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     }
     video, img {
       max-width: 100%;
       max-height: 100%;
       display: none;
     }
-  button {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-  }
+    #playButton {
+      display: block;
+      margin: 24px auto 0 auto;
+      padding: 14px 32px;
+      font-size: 1.2em;
+      border-radius: 8px;
+      border: none;
+      background: #f3e7ff;
+      color: #4b2e83;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: background 0.2s;
+    }
+    #playButton:hover {
+      background: #e3d0ff;
+    }
   </style>
 </head>
 <body>
-<div id="visual-container">
-  <img id="stillframe1" src="stillframe1.png" />
-  <img id="gapStillframe" src="gapStillframe.png" />
-  <img id="stillframe2" src="stillframe2.png" />
-  <video id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
-  <video id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
-  <video id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
-</div>
-
-<audio id="myAudio" hidden preload="auto"></audio>
-<br />
-<button id="playButton">Press to Begin Trial</button>
+  <div id="visual-container">
+    <img id="stillframe1" src="stillframe1.png" />
+    <img id="gapStillframe" src="gapStillframe.png" />
+    <img id="stillframe2" src="stillframe2.png" />
+    <video id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
+    <video id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
+    <video id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
+  </div>
+  <audio id="myAudio" hidden preload="auto"></audio>
+  <button id="playButton">Press to Begin Trial</button>
 
 <script>
 let isPlaying = false;
