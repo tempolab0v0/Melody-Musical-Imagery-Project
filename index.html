@@ -10,7 +10,7 @@
       background-color: #f0f0f0;
     }
     #visual-container {
-      width: 800px;
+      width: 1200px;
       height: 450px;
       margin: auto;
       background-color: white;
@@ -28,7 +28,8 @@
 <body>
 
 <div id="visual-container">
-  <img id="stillframe" src="stillframe.png" />
+  <img id="stillframe1" src="stillframe1.png" />
+  <img id="stillframe2" src="stillframe2.png" />
   <video id="video1" src="video1.mp4" playsinline preload="auto"></video>
   <video id="gapVideo" src="gapVideo.mp4" playsinline preload="auto"></video>
   <video id="video2" src="video2.mp4" playsinline preload="auto"></video>
@@ -41,13 +42,14 @@
 <script>
 document.getElementById("playButton").addEventListener("click", async function () {
   const audio = document.getElementById("myAudio");
-  const still = document.getElementById("stillframe");
+  const still1 = document.getElementById("stillframe1");
+  const still2 = document.getElementById("stillframe2");
   const v1 = document.getElementById("video1");
   const vGap = document.getElementById("gapVideo");
   const v2 = document.getElementById("video2");
 
   function hideAll() {
-    [still, v1, vGap, v2].forEach(el => {
+    [still1, still2, v1, vGap, v2].forEach(el => {
       el.style.display = "none";
       if (el.tagName === "VIDEO") {
         el.pause();
@@ -71,7 +73,6 @@ document.getElementById("playButton").addEventListener("click", async function (
     const randomRow = rows[Math.floor(Math.random() * rows.length)];
     const [filename, original, gap, testAudio, total] = randomRow.map(x => x.trim());
 
-    // Check if filename exists
     const audioURL = filename;
     const originalSec = parseFloat(original);
     const gapSec = parseFloat(gap);
@@ -92,9 +93,9 @@ document.getElementById("playButton").addEventListener("click", async function (
 
     await audio.play();
 
-    // 1. Pre-gap: show still
+    // 1. Pre-gap: show stillframe1
     hideAll();
-    still.style.display = "block";
+    still1.style.display = "block";
 
     setTimeout(() => {
       // 2. Video 1
@@ -115,9 +116,9 @@ document.getElementById("playButton").addEventListener("click", async function (
           v2.play();
 
           setTimeout(() => {
-            // 5. Post-gap stillframe
+            // 5. Post-gap stillframe2
             hideAll();
-            still.style.display = "block";
+            still2.style.display = "block";
 
             setTimeout(() => {
               hideAll(); // All done
