@@ -5,7 +5,7 @@
   <title>Melody's Mystery Elevator</title>
   <link href="jspsych.css" rel="stylesheet" />
   <script src="jspsych.js"></script>
- <style>
+  <style>
     body {
       text-align: center;
       padding-top: 50px;
@@ -13,7 +13,7 @@
     }
     #visual-container {
       width: 1200px;
-      height: 600px;
+      height: 800px;
       margin: auto;
       background-color: white;
       display: flex;
@@ -97,24 +97,27 @@ document.getElementById("playButton").addEventListener("click", async function (
     const gapVideoSec = vGap.duration;
     const video2Sec = v2.duration;
 
+    // Compute raw durations
     const preStillSec = originalSec - video1Sec;
     const gapStillSec = gapSec - gapVideoSec;
     const postStillSec = testSec - video2Sec;
 
-    if (preStillSec < 0 || gapStillSec < 0 || postStillSec < 0) {
-      throw new Error(`Timing error: preStillSec=${preStillSec}, gapStillSec=${gapStillSec}, postStillSec=${postStillSec}`);
-    }
+    // Clamp to non-negative durations
+    const clamp = (val) => Math.max(0, val);
+    const preStillClamped = clamp(preStillSec);
+    const gapStillClamped = clamp(gapStillSec);
+    const postStillClamped = clamp(postStillSec);
 
     // Assign exact visual timing
     let t = 0;
     visuals[0].start = t;
-    visuals[0].end = t += preStillSec;
+    visuals[0].end = t += preStillClamped;
 
     visuals[1].start = t;
     visuals[1].end = t += video1Sec;
 
     visuals[2].start = t;
-    visuals[2].end = t += gapStillSec;
+    visuals[2].end = t += gapStillClamped;
 
     visuals[3].start = t;
     visuals[3].end = t += gapVideoSec;
@@ -123,7 +126,7 @@ document.getElementById("playButton").addEventListener("click", async function (
     visuals[4].end = t += video2Sec;
 
     visuals[5].start = t;
-    visuals[5].end = t += postStillSec;
+    visuals[5].end = t += postStillClamped;
 
     const totalSec = visuals[5].end;
 
