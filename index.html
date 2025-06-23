@@ -48,6 +48,14 @@ document.getElementById("playButton").addEventListener("click", async function (
   const vGap = document.getElementById("gapVideo");
   const v2 = document.getElementById("video2");
 
+  const visuals = [
+    { el: still1, start: 0, end: 0 },     // to be updated
+    { el: v1, start: 0, end: 0 },
+    { el: vGap, start: 0, end: 0 },
+    { el: v2, start: 0, end: 0 },
+    { el: still2, start: 0, end: 0 }
+  ];
+
   function hideAll() {
     [still1, still2, v1, vGap, v2].forEach(el => {
       el.style.display = "none";
@@ -76,41 +84,39 @@ document.getElementById("playButton").addEventListener("click", async function (
     const audioURL = filename;
     const originalSec = parseFloat(original);
     const gapSec = parseFloat(gap);
+    const testSec = parseFloat(testAudio);
     const totalSec = parseFloat(total);
 
-    // Wait for video metadata to load
-    await Promise.all([
-      new Promise((res) => v1.onloadedmetadata = res),
-      new Promise((res) => v2.onloadedmetadata = res),
-      new Promise((res) => vGap.onloadedmetadata = res),
-    ]);
+    const preGapSec = (totalSec - originalSec - gapSec) / 2;
+    const video1Sec = testSec / 2;
+    const video2Sec = testSec / 2;
+    const postGapSec = preGapSec;
 
-    const video1Sec = v1.duration;
-    const video2Sec = v2.duration;
-    const gapVideoSec = vGap.duration;
+    // Set visual segment timings
+    visuals[0].start = 0;
+    visuals[0].end = preGapSec;
 
-    const contentDuration = video1Sec + gapVideoSec + video2Sec;
-    const paddingTime = totalSec - contentDuration;
-    const preGapSec = paddingTime / 2;
-    const postGapSec = paddingTime / 2;
+    visuals[1].start = visuals[0].end;
+    visuals[1].end = visuals[1].start + video1Sec;
 
-    const visuals = [
-      { el: still1, start: 0, end: preGapSec },
-      { el: v1, start: preGapSec, end: preGapSec + video1Sec },
-      { el: vGap, start: preGapSec + video1Sec, end: preGapSec + video1Sec + gapVideoSec },
-      { el: v2, start: preGapSec + video1Sec + gapVideoSec, end: preGapSec + video1Sec + gapVideoSec + video2Sec },
-      { el: still2, start: preGapSec + video1Sec + gapVideoSec + video2Sec, end: totalSec }
-    ];
+    visuals[2].start = visuals[1].end;
+    visuals[2].end = visuals[2].start + gapSec;
 
+    visuals[3].start = visuals[2].end;
+    visuals[3].end = visuals[3].start + video2Sec;
+
+    visuals[4].start = visuals[3].end;
+    visuals[4].end = visuals[4].start + postGapSec;
+
+    // Prepare audio
     audio.src = audioURL;
     await new Promise((resolve, reject) => {
       audio.oncanplaythrough = resolve;
       audio.onerror = () => reject("Failed to load audio file: " + audioURL);
     });
 
-    // Start sync loop
+    // Sync loop
     let currentVisual = null;
-
     function updateVisuals() {
       const t = audio.currentTime;
 
@@ -129,7 +135,7 @@ document.getElementById("playButton").addEventListener("click", async function (
       if (t < totalSec) {
         requestAnimationFrame(updateVisuals);
       } else {
-        hideAll();
+        hideAll(); // End
         console.log("Sequence done.");
       }
     }
