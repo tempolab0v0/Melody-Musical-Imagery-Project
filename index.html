@@ -5,24 +5,20 @@
   <title>Melody's Mystery Elevator</title>
   <link href="jspsych.css" rel="stylesheet" />
   <script src="jspsych.js"></script>
-  <style>
+<style>
     body {
       text-align: center;
       padding-top: 50px;
-      background-color: #f0f0f0;
+      background-color: #cefefe;
     }
+
     #visual-container {
-      width: 800px;
-      height: 450px;
-      margin: auto;
+      display: inline-block;
       background-color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 10px;
     }
+
     video, img {
-      max-width: 100%;
-      max-height: 100%;
       display: none;
     }
   </style>
@@ -39,7 +35,7 @@
 
 <audio id="myAudio" hidden preload="auto"></audio>
 <br />
-<button id="playButton">Play Synced Stimuli</button>
+<button id="playButton">Press to Begin Trial</button>
 
 <script>
 let isPlaying = false;
