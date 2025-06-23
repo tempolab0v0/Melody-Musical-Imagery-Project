@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="jspsych.js"></script>
+  <meta charset="UTF-8">
+  <title>Synced Stimuli Player</title>
   <link href="jspsych.css" rel="stylesheet" />
+  <script src="jspsych.js"></script>
   <style>
     body {
       text-align: center;
@@ -79,13 +81,13 @@ document.getElementById("playButton").addEventListener("click", async function (
     const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
     if (rows.length === 0) throw new Error("No valid audio rows found");
 
-    const [filename, original, gap, testAudio] = rows[Math.floor(Math.random() * rows.length)];
+    const [filename, original, gap, test] = rows[Math.floor(Math.random() * rows.length)];
     const originalSec = parseFloat(original);
     const gapSec = parseFloat(gap);
-    const testSec = parseFloat(testAudio);
+    const testSec = parseFloat(test);
     const audioURL = filename;
 
-    // Load videos to get actual durations
+    // Load video durations
     await Promise.all([
       v1.play().then(() => v1.pause()),
       vGap.play().then(() => vGap.pause()),
@@ -95,10 +97,16 @@ document.getElementById("playButton").addEventListener("click", async function (
     const video1Sec = v1.duration;
     const gapVideoSec = vGap.duration;
     const video2Sec = v2.duration;
-    const preStillSec = originalSec - video1Sec;
-    const postStillSec = testSec;
 
-    // Assign timing
+    const preStillSec = originalSec - video1Sec;
+    const gapStillSec = gapSec - gapVideoSec;
+    const postStillSec = testSec - video2Sec;
+
+    if (preStillSec < 0 || gapStillSec < 0 || postStillSec < 0) {
+      throw new Error("Timing error: Stillframe durations calculated as negative. Check CSV values.");
+    }
+
+    // Assign start/end times
     let t = 0;
     visuals[0].start = t;
     visuals[0].end = t += preStillSec;
@@ -107,7 +115,7 @@ document.getElementById("playButton").addEventListener("click", async function (
     visuals[1].end = t += video1Sec;
 
     visuals[2].start = t;
-    visuals[2].end = t += gapSec;
+    visuals[2].end = t += gapStillSec;
 
     visuals[3].start = t;
     visuals[3].end = t += gapVideoSec;
@@ -162,4 +170,3 @@ document.getElementById("playButton").addEventListener("click", async function (
 
 </body>
 </html>
-
