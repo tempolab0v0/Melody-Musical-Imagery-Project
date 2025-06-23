@@ -7,23 +7,33 @@
     body {
       text-align: center;
       padding-top: 50px;
+      background-color: #f0f0f0;
+    }
+    #visual-container {
+      width: 800px;
+      height: 450px;
+      margin: auto;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     video, img {
-      width: 800px;
+      max-width: 100%;
+      max-height: 100%;
       display: none;
-      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
 
-<!-- Stillframe and videos -->
-<img id="stillframe" src="stillframe.png" />
-<video id="video1" src="video1.mp4" playsinline preload="auto"></video>
-<video id="gapVideo" src="gapVideo.mp4" playsinline preload="auto"></video>
-<video id="video2" src="video2.mp4" playsinline preload="auto"></video>
+<div id="visual-container">
+  <img id="stillframe" src="stillframe.png" />
+  <video id="video1" src="video1.mp4" playsinline preload="auto"></video>
+  <video id="gapVideo" src="gapVideo.mp4" playsinline preload="auto"></video>
+  <video id="video2" src="video2.mp4" playsinline preload="auto"></video>
+</div>
 
-<!-- Audio -->
 <audio id="myAudio" hidden preload="auto"></audio>
 <br />
 <button id="playButton">Play Synced Stimuli</button>
@@ -37,7 +47,7 @@ document.getElementById("playButton").addEventListener("click", async function (
   const v2 = document.getElementById("video2");
 
   function hideAll() {
-    [v1, vGap, v2, still].forEach(el => {
+    [still, v1, vGap, v2].forEach(el => {
       el.style.display = "none";
       if (el.tagName === "VIDEO") {
         el.pause();
@@ -46,7 +56,7 @@ document.getElementById("playButton").addEventListener("click", async function (
     });
   }
 
-  hideAll(); // Hide all immediately
+  hideAll();
 
   try {
     const response = await fetch("audio_files.csv");
@@ -56,11 +66,13 @@ document.getElementById("playButton").addEventListener("click", async function (
     const lines = text.trim().split("\n");
     const rows = lines.slice(1).map(line => line.split(","));
 
-    if (rows.length === 0) throw new Error("No rows found in CSV");
+    if (rows.length === 0) throw new Error("No valid audio entries");
 
     const randomRow = rows[Math.floor(Math.random() * rows.length)];
-    const [filename, original, gap, testAudio, total] = randomRow.map(x => x.replace(/^"|"$/g, '').trim());
+    const [filename, original, gap, testAudio, total] = randomRow.map(x => x.trim());
 
+    // Check if filename exists
+    const audioURL = filename;
     const originalSec = parseFloat(original);
     const gapSec = parseFloat(gap);
     const testSec = parseFloat(testAudio);
@@ -71,19 +83,16 @@ document.getElementById("playButton").addEventListener("click", async function (
     const video1Sec = testSec / 2;
     const video2Sec = testSec / 2;
 
-    console.log(`Using audio: ${filename}`);
-    console.log({ preGapSec, video1Sec, gapSec, video2Sec, postGapSec });
+    audio.src = audioURL;
 
-    // Load audio file
-    audio.src = filename;
     await new Promise((resolve, reject) => {
       audio.oncanplaythrough = resolve;
-      audio.onerror = () => reject("Failed to load audio: " + filename);
+      audio.onerror = () => reject("Failed to load audio file: " + audioURL);
     });
 
     await audio.play();
 
-    // 1. Pre-gap: show stillframe
+    // 1. Pre-gap: show still
     hideAll();
     still.style.display = "block";
 
@@ -112,7 +121,7 @@ document.getElementById("playButton").addEventListener("click", async function (
 
             setTimeout(() => {
               hideAll(); // All done
-              console.log("Finished all media.");
+              console.log("Stimulus sequence complete.");
             }, postGapSec * 1000);
 
           }, video2Sec * 1000);
@@ -124,7 +133,7 @@ document.getElementById("playButton").addEventListener("click", async function (
     }, preGapSec * 1000);
 
   } catch (err) {
-    console.error("Error during playback:", err);
+    console.error("Playback Error:", err);
     alert("Failed to play media. Check the console for details.");
   }
 });
