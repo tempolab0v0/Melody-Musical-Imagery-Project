@@ -71,6 +71,22 @@
     .elevator-option:hover {
       transform: scale(1.05);
     }
+
+    #downloadButton {
+      display: none;
+      margin-top: 20px;
+      padding: 10px 24px;
+      background: #d9ecff;
+      color: #1a4d7a;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #downloadButton:hover {
+      background: #c1e1ff;
+    }
   </style>
 </head>
 <body>
@@ -87,15 +103,13 @@
   <audio id="myAudio" hidden preload="auto"></audio>
   <button id="playButton">Press to Begin Trial</button>
 
-  <div id="response-container">
-    <img id="normalElevator" class="elevator-option" src="normal.png" alt="Normal Elevator" />
-    <img id="wonkyElevator" class="elevator-option" src="wonky.png" alt="Wonky Elevator" />
-  </div>
+  <div id="response-container"></div>
+
+  <button id="downloadButton" onclick="downloadAllResponses()">Download All Responses</button>
 
   <script>
     let isPlaying = false;
     let trialQueued = false;
-    let responseLog = [];
 
     const audio = document.getElementById("myAudio");
     const still1 = document.getElementById("stillframe1");
@@ -104,6 +118,7 @@
     const v1 = document.getElementById("video1");
     const vGap = document.getElementById("gapVideo");
     const v2 = document.getElementById("video2");
+
     const visuals = [
       { el: still1, start: 0, end: 0 },
       { el: v1, start: 0, end: 0 },
@@ -124,18 +139,45 @@
     }
 
     function showResponseOptions() {
-      document.getElementById("response-container").style.display = "block";
+      const container = document.getElementById("response-container");
+      const normal = document.createElement("img");
+      const wonky = document.createElement("img");
+
+      normal.src = "normal.jpg";
+      normal.className = "elevator-option";
+      normal.alt = "Normal Elevator";
+      normal.onclick = () => handleResponse("normal");
+
+      wonky.src = "wonky.png";
+      wonky.className = "elevator-option";
+      wonky.alt = "Wonky Elevator";
+      wonky.onclick = () => handleResponse("wonky");
+
+      container.innerHTML = '';
+      const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
+      order.forEach(el => container.appendChild(el));
+      container.style.display = "block";
     }
 
     function handleResponse(choice) {
       const timestamp = new Date().toISOString();
-      responseLog.push({ timestamp, choice });
+      const entry = { timestamp, choice };
+
+      const existing = JSON.parse(localStorage.getItem("elevatorResponses") || "[]");
+      existing.push(entry);
+      localStorage.setItem("elevatorResponses", JSON.stringify(existing));
+
       document.getElementById("response-container").style.display = "none";
-      console.log("User selected:", choice);
-      downloadCSV(responseLog);
+      document.getElementById("downloadButton").style.display = "inline-block";
     }
 
-    function downloadCSV(data) {
+    function downloadAllResponses() {
+      const data = JSON.parse(localStorage.getItem("elevatorResponses") || "[]");
+      if (data.length === 0) {
+        alert("No responses to download yet.");
+        return;
+      }
+
       const csvRows = [
         "timestamp,choice",
         ...data.map(row => `${row.timestamp},${row.choice}`)
@@ -148,9 +190,6 @@
       a.click();
       URL.revokeObjectURL(url);
     }
-
-    document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"));
-    document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"));
 
     document.getElementById("playButton").addEventListener("click", async function () {
       if (isPlaying) {
@@ -189,19 +228,14 @@
           let t = 0;
           visuals[0].start = t;
           visuals[0].end = t += preStillSec;
-
           visuals[1].start = t;
           visuals[1].end = t += video1Sec;
-
           visuals[2].start = t;
           visuals[2].end = t += gapStillSec;
-
           visuals[3].start = t;
           visuals[3].end = t += gapVideoSec;
-
           visuals[4].start = t;
           visuals[4].end = t += video2Sec;
-
           visuals[5].start = t;
           visuals[5].end = t += postStillSec;
 
