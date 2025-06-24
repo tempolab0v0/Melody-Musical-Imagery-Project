@@ -135,27 +135,30 @@
       document.body.appendChild(options);
     }
 
-    function handleResponse(choice) {
-      const timestamp = new Date().toISOString();
-      const entry = {
-        participant: participantID,
-        timestamp,
-        choice,
-        audio: currentAudioFile 
-      };
+  function handleResponse(choice) {
+    const timestamp = new Date().toISOString();
+    const entry = {
+      participant: participantID,
+      timestamp,
+      choice,
+      audio: currentAudioFile
+    };
 
-      const scriptURL = "https://script.google.com/macros/s/AKfycbzM7hsd9CQrv-ZiMR57hjNeUnf4hWRFVDkvmFPbQJhs--5kKOkdD3ONJONTkb7498Ni/exec"; 
+    // Build a GET URL with parameters
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxu3kNk-nWmCUj6TWsykgNLJtXwm_WLFIE9aSyyBkVPlEusTSClFMofzCmXnXeDnuWx/exec";
+    const params = new URLSearchParams(entry).toString();
+    const url = `${scriptURL}?${params}`;
 
-      fetch("https://script.google.com/macros/s/AKfycbzM7hsd9CQrv-ZiMR57hjNeUnf4hWRFVDkvmFPbQJhs--5kKOkdD3ONJONTkb7498Ni/exec", {
-        method: "POST",
-        body: JSON.stringify(entry),
-        headers: { "Content-Type": "application/json" }
-      })
-      .then(res => res.text())
-      .then(msg => {
-        alert("Response recorded! Thank you.");
-        location.reload(); 
-      })
+    // Send without CORS preflight
+    fetch(url, {
+      method: 'GET',
+      mode: 'no-cors'
+    });
+
+    // We won't see the response, but the row will be appended.
+    alert("Response recorded! Thank you.");
+    location.reload();
+  }
       .catch(err => {
         console.error("Error:", err);
         alert("Failed to submit response.");
