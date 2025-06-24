@@ -138,28 +138,29 @@
       });
     }
 
-    function showResponseOptions() {
-      const container = document.getElementById("response-container");
-      const normal = document.createElement("img");
-      const wonky = document.createElement("img");
+        function showResponseOptions() {
+        const container = document.getElementById("response-container");
+      
+        const normal = document.createElement("img");
+        normal.src = "normal.jpg"; 
+        normal.className = "elevator-option";
+        normal.alt = "Normal Elevator";
+        normal.onclick = () => handleResponse("normal");
+      
+        const wonky = document.createElement("img");
+        wonky.src = "wonky.png"; 
+        wonky.className = "elevator-option";
+        wonky.alt = "Wonky Elevator";
+        wonky.onclick = () => handleResponse("wonky");
+      
+        container.innerHTML = '';
+        const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
+        order.forEach(el => container.appendChild(el));
+      
+        container.style.display = "block";
+      }
 
-      normal.src = "normal.jpg";
-      normal.className = "elevator-option";
-      normal.alt = "Normal Elevator";
-      normal.onclick = () => handleResponse("normal");
-
-      wonky.src = "wonky.png";
-      wonky.className = "elevator-option";
-      wonky.alt = "Wonky Elevator";
-      wonky.onclick = () => handleResponse("wonky");
-
-      container.innerHTML = '';
-      const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
-      order.forEach(el => container.appendChild(el));
-      container.style.display = "block";
-    }
-
-    function handleResponse(choice) {
+      function handleResponse(choice) {
       const timestamp = new Date().toISOString();
       const entry = { timestamp, choice };
 
