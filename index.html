@@ -203,32 +203,50 @@
     }
 
     function showResponseOptions() {
-      document.body.innerHTML = "";
+  document.body.innerHTML = "";
 
-      const question = document.createElement("h1");
-      question.textContent = "Which elevator did Melody ride?";
-      document.body.appendChild(question);
+  const question = document.createElement("h1");
+  question.textContent = "Which elevator did Melody ride?";
+  question.style.marginBottom = "20px";
+  question.style.textAlign = "center";
+  document.body.appendChild(question);
 
-      const options = document.createElement("div");
-      options.style.display = "flex";
-      options.style.justifyContent = "center";
-      options.style.marginTop = "40px";
+  const options = document.createElement("div");
+  options.style.display = "flex";
+  options.style.justifyContent = "center";
+  options.style.alignItems = "center";
+  options.style.gap = "80px";
+  options.style.marginTop = "40px";
 
-      const normal = document.createElement("img");
-      normal.src = "normal.jpg";
-      normal.className = "elevator-option";
-      normal.alt = "Normal Elevator";
-      normal.onclick = () => handleResponse("normal");
+  const createElevatorOption = (src, alt, label, onClickHandler) => {
+    const container = document.createElement("div");
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
+    container.style.alignItems = "center";
 
-      const wonky = document.createElement("img");
-      wonky.src = "wonky.png";
-      wonky.className = "elevator-option";
-      wonky.alt = "Wonky Elevator";
-      wonky.onclick = () => handleResponse("wonky");
+    const img = document.createElement("img");
+    img.src = src;
+    img.className = "elevator-option";
+    img.alt = alt;
+    img.onclick = onClickHandler;
 
-      const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
-      order.forEach(el => options.appendChild(el));
-      document.body.appendChild(options);
+    const caption = document.createElement("div");
+    caption.textContent = label;
+    caption.style.marginTop = "10px";
+    caption.style.fontWeight = "bold";
+
+    container.appendChild(img);
+    container.appendChild(caption);
+    return container;
+  };
+
+  const normal = createElevatorOption("normal.jpg", "Normal Elevator", "Normal Elevator", () => handleResponse("normal"));
+  const wonky = createElevatorOption("wonky.png", "Wonky Elevator", "Wonky Elevator", () => handleResponse("wonky"));
+
+  const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
+  order.forEach(el => options.appendChild(el));
+  document.body.appendChild(options);
+}
     }
 
     function handleResponse(choice) {
@@ -252,8 +270,8 @@
       .then(() => {
         trialCounter++;
         if (trialCounter > totalTrials) {
-          document.body.innerHTML = `<h1>Thank you for participating! All trials complete.</h1>`;
-        } else {
+  document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
+} else {
           rebuildBaseHTML();
         }
       })
@@ -289,4 +307,5 @@
   </script>
 </body>
 </html>
+
 
