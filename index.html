@@ -10,7 +10,6 @@
       background-color: white;
       font-family: Arial, sans-serif;
     }
-
     #visual-container {
       width: 90vw;
       height: 80vh;
@@ -25,7 +24,6 @@
       overflow: hidden;
       position: relative;
     }
-
     .media-content {
       width: 100%;
       height: 100%;
@@ -35,7 +33,6 @@
       top: 0;
       left: 0;
     }
-
     #playButton {
       margin: 24px auto 0 auto;
       padding: 14px 32px;
@@ -47,14 +44,12 @@
       font-weight: bold;
       cursor: pointer;
     }
-
     .elevator-option {
       width: 300px;
       margin: 20px;
       cursor: pointer;
       transition: transform 0.2s ease;
     }
-
     .elevator-option:hover {
       transform: scale(1.05);
     }
@@ -82,33 +77,37 @@
     let sessionID = null;
     let currentAudioFile = "";
     let availableAudios = [];
-    let visuals = [];
 
     const audio = document.getElementById("myAudio");
+    const still1 = document.getElementById("stillframe1");
+    const still2 = document.getElementById("stillframe2");
+    const gapStill = document.getElementById("gapStillframe");
+    const v1 = document.getElementById("video1");
+    const vGap = document.getElementById("gapVideo");
+    const v2 = document.getElementById("video2");
 
-    function setupVisualElements() {
-      visuals = [
-        { el: document.getElementById("stillframe1"), start: 0, end: 0 },
-        { el: document.getElementById("video1"), start: 0, end: 0 },
-        { el: document.getElementById("gapStillframe"), start: 0, end: 0 },
-        { el: document.getElementById("gapVideo"), start: 0, end: 0 },
-        { el: document.getElementById("video2"), start: 0, end: 0 },
-        { el: document.getElementById("stillframe2"), start: 0, end: 0 }
-      ];
-    }
+    const visuals = [
+      { el: still1, start: 0, end: 0 },
+      { el: v1, start: 0, end: 0 },
+      { el: gapStill, start: 0, end: 0 },
+      { el: vGap, start: 0, end: 0 },
+      { el: v2, start: 0, end: 0 },
+      { el: still2, start: 0, end: 0 }
+    ];
 
     window.onload = async () => {
-      participantID = prompt("Enter your Participant ID:") || "anon_" + Math.floor(Math.random() * 100000);
+      participantID = prompt("Enter your Participant ID:");
+      if (!participantID) participantID = "anon_" + Math.floor(Math.random() * 100000);
       sessionID = `${participantID}_${new Date().toISOString()}`;
-      setupVisualElements();
 
+      // Load audio files once and shuffle
       try {
         const response = await fetch("audio_files.csv");
         const text = await response.text();
         const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
         if (rows.length < totalTrials) throw new Error("Not enough unique audio files.");
-        shuffleArray(rows);
-        availableAudios = rows.slice(0, totalTrials);
+        shuffleArray(rows); // randomize order
+        availableAudios = rows.slice(0, totalTrials); // take only the first 3
       } catch (err) {
         alert("Failed to load audio files: " + err.message);
         return;
@@ -118,16 +117,19 @@
     };
 
     function updatePlayButton() {
-      document.getElementById("trialControls").innerHTML = `<button id="playButton">Press to Begin Trial ${trialCounter} of ${totalTrials}</button>`;
+      const trialControls = document.getElementById("trialControls");
+      trialControls.innerHTML = `
+        <button id="playButton">Press to Begin Trial ${trialCounter} of ${totalTrials}</button>
+      `;
       document.getElementById("playButton").addEventListener("click", playTrial);
     }
 
     function hideAll() {
-      visuals.forEach(v => {
-        v.el.style.display = "none";
-        if (v.el.tagName === "VIDEO") {
-          v.el.pause();
-          v.el.currentTime = 0;
+      [still1, still2, gapStill, v1, vGap, v2].forEach(el => {
+        el.style.display = "none";
+        if (el.tagName === "VIDEO") {
+          el.pause();
+          el.currentTime = 0;
         }
       });
     }
@@ -144,9 +146,15 @@
         const audioURL = filename;
         currentAudioFile = filename;
 
-        await Promise.all(visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el.play().then(() => v.el.pause())));
+        await Promise.all([
+          v1.play().then(() => v1.pause()),
+          vGap.play().then(() => vGap.pause()),
+          v2.play().then(() => v2.pause())
+        ]);
 
-        const [video1Sec, gapVideoSec, video2Sec] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el.duration);
+        const video1Sec = v1.duration;
+        const gapVideoSec = vGap.duration;
+        const video2Sec = v2.duration;
 
         const preStillSec = Math.max(0, originalSec - video1Sec);
         const gapStillSec = Math.max(0, gapSec - gapVideoSec);
@@ -203,50 +211,32 @@
     }
 
     function showResponseOptions() {
-  document.body.innerHTML = "";
+      document.body.innerHTML = "";
 
-  const question = document.createElement("h1");
-  question.textContent = "Which elevator did Melody ride?";
-  question.style.marginBottom = "20px";
-  question.style.textAlign = "center";
-  document.body.appendChild(question);
+      const question = document.createElement("h1");
+      question.textContent = "Which elevator did Melody ride?";
+      document.body.appendChild(question);
 
-  const options = document.createElement("div");
-  options.style.display = "flex";
-  options.style.justifyContent = "center";
-  options.style.alignItems = "center";
-  options.style.gap = "80px";
-  options.style.marginTop = "40px";
+      const options = document.createElement("div");
+      options.style.display = "flex";
+      options.style.justifyContent = "center";
+      options.style.marginTop = "40px";
 
-  const createElevatorOption = (src, alt, label, onClickHandler) => {
-    const container = document.createElement("div");
-    container.style.display = "flex";
-    container.style.flexDirection = "column";
-    container.style.alignItems = "center";
+      const normal = document.createElement("img");
+      normal.src = "normal.jpg";
+      normal.className = "elevator-option";
+      normal.alt = "Normal Elevator";
+      normal.onclick = () => handleResponse("normal");
 
-    const img = document.createElement("img");
-    img.src = src;
-    img.className = "elevator-option";
-    img.alt = alt;
-    img.onclick = onClickHandler;
+      const wonky = document.createElement("img");
+      wonky.src = "wonky.png";
+      wonky.className = "elevator-option";
+      wonky.alt = "Wonky Elevator";
+      wonky.onclick = () => handleResponse("wonky");
 
-    const caption = document.createElement("div");
-    caption.textContent = label;
-    caption.style.marginTop = "10px";
-    caption.style.fontWeight = "bold";
-
-    container.appendChild(img);
-    container.appendChild(caption);
-    return container;
-  };
-
-  const normal = createElevatorOption("normal.jpg", "Normal Elevator", "Normal Elevator", () => handleResponse("normal"));
-  const wonky = createElevatorOption("wonky.png", "Wonky Elevator", "Wonky Elevator", () => handleResponse("wonky"));
-
-  const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
-  order.forEach(el => options.appendChild(el));
-  document.body.appendChild(options);
-}
+      const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
+      order.forEach(el => options.appendChild(el));
+      document.body.appendChild(options);
     }
 
     function handleResponse(choice) {
@@ -270,9 +260,9 @@
       .then(() => {
         trialCounter++;
         if (trialCounter > totalTrials) {
-  document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
-} else {
-          rebuildBaseHTML();
+          document.body.innerHTML = `<h1>Thank you for participating! All trials complete.</h1>`;
+        } else {
+          rebuildBaseHTML(); // resets visuals + button only
         }
       })
       .catch(err => {
@@ -294,7 +284,6 @@
         <audio id="myAudio" hidden preload="auto"></audio>
         <div id="trialControls"></div>
       `;
-      setupVisualElements();
       updatePlayButton();
     }
 
