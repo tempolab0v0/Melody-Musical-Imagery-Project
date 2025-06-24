@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Melody's Mystery Elevator</title>
-  <link href="jspsych.css" rel="stylesheet" />
-  <script src="jspsych.js"></script>
   <style>
     body {
       margin: 0;
@@ -48,17 +46,6 @@
       color: #4b2e83;
       font-weight: bold;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      transition: background 0.2s;
-    }
-
-    #playButton:hover {
-      background: #e3d0ff;
-    }
-
-    #response-container {
-      display: none;
-      margin-top: 30px;
     }
 
     .elevator-option {
@@ -71,26 +58,9 @@
     .elevator-option:hover {
       transform: scale(1.05);
     }
-
-    #downloadButton {
-      display: none;
-      margin-top: 20px;
-      padding: 10px 24px;
-      background: #d9ecff;
-      color: #1a4d7a;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    #downloadButton:hover {
-      background: #c1e1ff;
-    }
   </style>
 </head>
 <body>
-
   <div id="visual-container">
     <img class="media-content" id="stillframe1" src="stillframe1.png" />
     <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
@@ -103,13 +73,11 @@
   <audio id="myAudio" hidden preload="auto"></audio>
   <button id="playButton">Press to Begin Trial</button>
 
-  <div id="response-container"></div>
-
-  <button id="downloadButton" onclick="downloadAllResponses()">Download All Responses</button>
-
   <script>
     let isPlaying = false;
     let trialQueued = false;
+    let participantID = null;
+    let currentAudioFile = ""; // ✅ Track which audio file was used
 
     const audio = document.getElementById("myAudio");
     const still1 = document.getElementById("stillframe1");
@@ -138,59 +106,66 @@
       });
     }
 
-        function showResponseOptions() {
-        const container = document.getElementById("response-container");
-      
-        const normal = document.createElement("img");
-        normal.src = "normal.jpg"; 
-        normal.className = "elevator-option";
-        normal.alt = "Normal Elevator";
-        normal.onclick = () => handleResponse("normal");
-      
-        const wonky = document.createElement("img");
-        wonky.src = "wonky.png"; 
-        wonky.className = "elevator-option";
-        wonky.alt = "Wonky Elevator";
-        wonky.onclick = () => handleResponse("wonky");
-      
-        container.innerHTML = '';
-        const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
-        order.forEach(el => container.appendChild(el));
-      
-        container.style.display = "block";
-      }
+    function showResponseOptions() {
+      document.body.innerHTML = "";
 
-      function handleResponse(choice) {
+      const question = document.createElement("h1");
+      question.textContent = "Which elevator did Melody ride?";
+      document.body.appendChild(question);
+
+      const options = document.createElement("div");
+      options.style.display = "flex";
+      options.style.justifyContent = "center";
+      options.style.marginTop = "40px";
+
+      const normal = document.createElement("img");
+      normal.src = "normal.jpg";
+      normal.className = "elevator-option";
+      normal.alt = "Normal Elevator";
+      normal.onclick = () => handleResponse("normal");
+
+      const wonky = document.createElement("img");
+      wonky.src = "wonky.png";
+      wonky.className = "elevator-option";
+      wonky.alt = "Wonky Elevator";
+      wonky.onclick = () => handleResponse("wonky");
+
+      const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
+      order.forEach(el => options.appendChild(el));
+      document.body.appendChild(options);
+    }
+
+    function handleResponse(choice) {
       const timestamp = new Date().toISOString();
-      const entry = { timestamp, choice };
+      const entry = {
+        participant: participantID,
+        timestamp,
+        choice,
+        audio: currentAudioFile // ✅ Include filename
+      };
 
-      const existing = JSON.parse(localStorage.getItem("elevatorResponses") || "[]");
-      existing.push(entry);
-      localStorage.setItem("elevatorResponses", JSON.stringify(existing));
+      const scriptURL = "https://script.google.com/home/projects/1IBkxd5e0dfmPSAEF6q0WlIeKCC_ZjCQVAR_x_1VoqEHWFj49L72VL-K4/edit"; // ✅ Replace with your actual Apps Script URL
 
-      document.getElementById("response-container").style.display = "none";
-      document.getElementById("downloadButton").style.display = "inline-block";
+      fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify(entry),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.text())
+      .then(msg => {
+        alert("Response recorded! Thank you.");
+        location.reload(); // Reload for next trial (or remove if doing multiple trials)
+      })
+      .catch(err => {
+        console.error("Error:", err);
+        alert("Failed to submit response.");
+      });
     }
 
-    function downloadAllResponses() {
-      const data = JSON.parse(localStorage.getItem("elevatorResponses") || "[]");
-      if (data.length === 0) {
-        alert("No responses to download yet.");
-        return;
-      }
-
-      const csvRows = [
-        "timestamp,choice",
-        ...data.map(row => `${row.timestamp},${row.choice}`)
-      ];
-      const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "elevator_choices.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+    window.onload = () => {
+      participantID = prompt("Enter your Participant ID:");
+      if (!participantID) participantID = "anon_" + Math.floor(Math.random() * 100000);
+    };
 
     document.getElementById("playButton").addEventListener("click", async function () {
       if (isPlaying) {
@@ -215,6 +190,7 @@
           const gapSec = parseFloat(gap);
           const testSec = parseFloat(test);
           const audioURL = filename;
+          currentAudioFile = filename; // ✅ Track current audio
 
           await Promise.all([v1.play().then(() => v1.pause()), vGap.play().then(() => vGap.pause()), v2.play().then(() => v2.pause())]);
 
@@ -275,10 +251,9 @@
 
           await audio.play();
           updateVisuals();
-
         } catch (err) {
           console.error("Sync error:", err);
-          alert("Error playing synced sequence. See console for details.");
+          alert("Error playing trial. See console for details.");
           isPlaying = false;
         }
       }
