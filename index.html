@@ -74,229 +74,233 @@
   <div id="trialControls">
     <button id="playButton">Press to Begin Trial</button>
   </div>
-<script>
-  const totalTrials = 3;
-  let trialCounter = 1;
-  let participantID = null;
-  let sessionID = null;
-  let currentAudioFile = "";
-  let availableAudios = [];
 
-  const audio = document.getElementById("myAudio");
-  const still1 = document.getElementById("stillframe1");
-  const still2 = document.getElementById("stillframe2");
-  const gapStill = document.getElementById("gapStillframe");
-  const v1 = document.getElementById("video1");
-  const vGap = document.getElementById("gapVideo");
-  const v2 = document.getElementById("video2");
+  <script>
+    let totalTrials = 3;
+    let trialCounter = 1;
+    let participantID = null;
+    let sessionID = null;
+    let currentAudioFile = "";
+    let availableAudios = [];
 
-  const visuals = [
-    { el: still1, start: 0, end: 0 },
-    { el: v1, start: 0, end: 0 },
-    { el: gapStill, start: 0, end: 0 },
-    { el: vGap, start: 0, end: 0 },
-    { el: v2, start: 0, end: 0 },
-    { el: still2, start: 0, end: 0 }
-  ];
+    let audio, still1, still2, gapStill, v1, vGap, v2;
+    const visuals = Array(6).fill({ el: null, start: 0, end: 0 });
 
-  window.onload = async () => {
-    participantID = prompt("Enter your Participant ID:");
-    if (!participantID) participantID = "anon_" + Math.floor(Math.random() * 100000);
-    sessionID = `${participantID}_${new Date().toISOString()}`;
+    function assignElements() {
+      audio = document.getElementById("myAudio");
+      still1 = document.getElementById("stillframe1");
+      still2 = document.getElementById("stillframe2");
+      gapStill = document.getElementById("gapStillframe");
+      v1 = document.getElementById("video1");
+      vGap = document.getElementById("gapVideo");
+      v2 = document.getElementById("video2");
 
-    // Load audio files once and shuffle
-    try {
-      const response = await fetch("audio_files.csv");
-      const text = await response.text();
-      const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
-      if (rows.length < totalTrials) throw new Error("Not enough unique audio files.");
-      shuffleArray(rows); // randomize order
-      availableAudios = rows.slice(0, totalTrials); // take only the first 3
-    } catch (err) {
-      alert("Failed to load audio files: " + err.message);
-      return;
+      visuals[0].el = still1;
+      visuals[1].el = v1;
+      visuals[2].el = gapStill;
+      visuals[3].el = vGap;
+      visuals[4].el = v2;
+      visuals[5].el = still2;
     }
 
-    updatePlayButton();
-  };
-
-  function updatePlayButton() {
-    const trialControls = document.getElementById("trialControls");
-    trialControls.innerHTML = `
-      <button id="playButton">Press to Begin Trial ${trialCounter} of ${totalTrials}</button>
-    `;
-    document.getElementById("playButton").addEventListener("click", playTrial);
-  }
-
-  function hideAll() {
-    [still1, still2, gapStill, v1, vGap, v2].forEach(el => {
-      el.style.display = "none";
-      if (el.tagName === "VIDEO") {
-        el.pause();
-        el.currentTime = 0;
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
       }
-    });
-  }
-
-  async function playTrial() {
-    document.getElementById("trialControls").innerHTML = "";
-    hideAll();
-
-    try {
-      const [filename, original, gap, test] = availableAudios[trialCounter - 1];
-      const originalSec = parseFloat(original);
-      const gapSec = parseFloat(gap);
-      const testSec = parseFloat(test);
-      const audioURL = filename;
-      currentAudioFile = filename;
-
-      await Promise.all([
-        v1.play().then(() => v1.pause()),
-        vGap.play().then(() => vGap.pause()),
-        v2.play().then(() => v2.pause())
-      ]);
-
-      const video1Sec = v1.duration;
-      const gapVideoSec = vGap.duration;
-      const video2Sec = v2.duration;
-
-      const preStillSec = Math.max(0, originalSec - video1Sec);
-      const gapStillSec = Math.max(0, gapSec - gapVideoSec);
-      const postStillSec = Math.max(0, testSec - video2Sec);
-
-      let t = 0;
-      visuals[0].start = t;
-      visuals[0].end = t += preStillSec;
-      visuals[1].start = t;
-      visuals[1].end = t += video1Sec;
-      visuals[2].start = t;
-      visuals[2].end = t += gapStillSec;
-      visuals[3].start = t;
-      visuals[3].end = t += gapVideoSec;
-      visuals[4].start = t;
-      visuals[4].end = t += video2Sec;
-      visuals[5].start = t;
-      visuals[5].end = t += postStillSec;
-
-      audio.src = audioURL;
-      await new Promise((resolve, reject) => {
-        audio.oncanplaythrough = resolve;
-        audio.onerror = () => reject("Audio failed to load");
-      });
-
-      let currentVisual = null;
-      function updateVisuals() {
-        const time = audio.currentTime;
-        for (const v of visuals) {
-          if (time >= v.start && time < v.end) {
-            if (currentVisual !== v.el) {
-              hideAll();
-              v.el.style.display = "block";
-              if (v.el.tagName === "VIDEO") v.el.play();
-              currentVisual = v.el;
-            }
-            break;
-          }
-        }
-        if (time < visuals[visuals.length - 1].end) {
-          requestAnimationFrame(updateVisuals);
-        } else {
-          hideAll();
-          showResponseOptions();
-        }
-      }
-
-      await audio.play();
-      updateVisuals();
-    } catch (err) {
-      console.error(err);
-      alert("An error occurred during playback.");
     }
-  }
 
-  function showResponseOptions() {
-    document.body.innerHTML = "";
+    window.onload = async () => {
+      assignElements();
+      participantID = prompt("Enter your Participant ID:");
+      if (!participantID) participantID = "anon_" + Math.floor(Math.random() * 100000);
+      sessionID = `${participantID}_${new Date().toISOString()}`;
 
-    const question = document.createElement("h1");
-    question.textContent = "Which elevator did Melody ride?";
-    document.body.appendChild(question);
+      try {
+        const response = await fetch("audio_files.csv");
+        const text = await response.text();
+        const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
+        if (rows.length < totalTrials) throw new Error("Not enough unique audio files.");
+        shuffleArray(rows);
+        availableAudios = rows.slice(0, totalTrials);
+      } catch (err) {
+        alert("Failed to load audio files: " + err.message);
+        return;
+      }
 
-    const options = document.createElement("div");
-    options.style.display = "flex";
-    options.style.justifyContent = "center";
-    options.style.marginTop = "40px";
-
-    const normal = document.createElement("img");
-    normal.src = "normal.jpg";
-    normal.className = "elevator-option";
-    normal.alt = "Normal Elevator";
-    normal.onclick = () => handleResponse("normal");
-
-    const wonky = document.createElement("img");
-    wonky.src = "wonky.png";
-    wonky.className = "elevator-option";
-    wonky.alt = "Wonky Elevator";
-    wonky.onclick = () => handleResponse("wonky");
-
-    const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
-    order.forEach(el => options.appendChild(el));
-    document.body.appendChild(options);
-  }
-
-  function handleResponse(choice) {
-    const entry = {
-      participant: participantID,
-      session: sessionID,
-      trial_num: trialCounter,
-      timestamp: new Date().toISOString(),
-      choice,
-      audio: currentAudioFile
+      updatePlayButton();
     };
 
-    const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
-
-    fetch(backendlessURL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(entry)
-    })
-    .then(res => res.json())
-    .then(() => {
-      trialCounter++;
-      if (trialCounter > totalTrials) {
-        document.body.innerHTML = `<h1>Thank you for participating! All trials complete.</h1>`;
-      } else {
-        rebuildBaseHTML(); // resets visuals + button only
-      }
-    })
-    .catch(err => {
-      console.error("Submission error:", err);
-      alert("Failed to record response.");
-    });
-  }
-
-  function rebuildBaseHTML() {
-    document.body.innerHTML = `
-      <div id="visual-container">
-        <img class="media-content" id="stillframe1" src="stillframe1.png" />
-        <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
-        <img class="media-content" id="stillframe2" src="stillframe2.png" />
-        <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
-        <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
-        <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
-      </div>
-      <audio id="myAudio" hidden preload="auto"></audio>
-      <div id="trialControls"></div>
-    `;
-    updatePlayButton();
-  }
-
-  function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
+    function updatePlayButton() {
+      const trialControls = document.getElementById("trialControls");
+      trialControls.innerHTML = `
+        <button id="playButton">Press to Begin Trial ${trialCounter} of ${totalTrials}</button>
+      `;
+      document.getElementById("playButton").addEventListener("click", playTrial);
     }
-  }
-</script>
+
+    function hideAll() {
+      [still1, still2, gapStill, v1, vGap, v2].forEach(el => {
+        el.style.display = "none";
+        if (el.tagName === "VIDEO") {
+          el.pause();
+          el.currentTime = 0;
+        }
+      });
+    }
+
+    async function playTrial() {
+      document.getElementById("trialControls").innerHTML = "";
+      hideAll();
+
+      try {
+        const [filename, original, gap, test] = availableAudios[trialCounter - 1];
+        const originalSec = parseFloat(original);
+        const gapSec = parseFloat(gap);
+        const testSec = parseFloat(test);
+        currentAudioFile = filename;
+
+        await Promise.all([
+          v1.play().then(() => v1.pause()),
+          vGap.play().then(() => vGap.pause()),
+          v2.play().then(() => v2.pause())
+        ]);
+
+        const video1Sec = v1.duration;
+        const gapVideoSec = vGap.duration;
+        const video2Sec = v2.duration;
+
+        const preStillSec = Math.max(0, originalSec - video1Sec);
+        const gapStillSec = Math.max(0, gapSec - gapVideoSec);
+        const postStillSec = Math.max(0, testSec - video2Sec);
+
+        let t = 0;
+        visuals[0].start = t;
+        visuals[0].end = t += preStillSec;
+        visuals[1].start = t;
+        visuals[1].end = t += video1Sec;
+        visuals[2].start = t;
+        visuals[2].end = t += gapStillSec;
+        visuals[3].start = t;
+        visuals[3].end = t += gapVideoSec;
+        visuals[4].start = t;
+        visuals[4].end = t += video2Sec;
+        visuals[5].start = t;
+        visuals[5].end = t += postStillSec;
+
+        audio.src = filename;
+        await new Promise((resolve, reject) => {
+          audio.oncanplaythrough = resolve;
+          audio.onerror = () => reject("Audio failed to load");
+        });
+
+        let currentVisual = null;
+        function updateVisuals() {
+          const time = audio.currentTime;
+          for (const v of visuals) {
+            if (time >= v.start && time < v.end) {
+              if (currentVisual !== v.el) {
+                hideAll();
+                v.el.style.display = "block";
+                if (v.el.tagName === "VIDEO") v.el.play();
+                currentVisual = v.el;
+              }
+              break;
+            }
+          }
+          if (time < visuals[visuals.length - 1].end) {
+            requestAnimationFrame(updateVisuals);
+          } else {
+            hideAll();
+            showResponseOptions();
+          }
+        }
+
+        await audio.play();
+        updateVisuals();
+      } catch (err) {
+        console.error(err);
+        alert("An error occurred during playback.");
+      }
+    }
+
+    function showResponseOptions() {
+      document.body.innerHTML = "";
+
+      const question = document.createElement("h1");
+      question.textContent = "Which elevator did Melody ride?";
+      document.body.appendChild(question);
+
+      const options = document.createElement("div");
+      options.style.display = "flex";
+      options.style.justifyContent = "center";
+      options.style.marginTop = "40px";
+
+      const normal = document.createElement("img");
+      normal.src = "normal.jpg";
+      normal.className = "elevator-option";
+      normal.alt = "Normal Elevator";
+      normal.onclick = () => handleResponse("normal");
+
+      const wonky = document.createElement("img");
+      wonky.src = "wonky.png";
+      wonky.className = "elevator-option";
+      wonky.alt = "Wonky Elevator";
+      wonky.onclick = () => handleResponse("wonky");
+
+      const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
+      order.forEach(el => options.appendChild(el));
+      document.body.appendChild(options);
+    }
+
+    function handleResponse(choice) {
+      const entry = {
+        participant: participantID,
+        session: sessionID,
+        trial_num: trialCounter,
+        timestamp: new Date().toISOString(),
+        choice,
+        audio: currentAudioFile
+      };
+
+      const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
+
+      fetch(backendlessURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry)
+      })
+      .then(res => res.json())
+      .then(() => {
+        trialCounter++;
+        if (trialCounter > totalTrials) {
+          document.body.innerHTML = `<h1>Thank you for participating! All trials complete.</h1>`;
+        } else {
+          rebuildBaseHTML();
+        }
+      })
+      .catch(err => {
+        console.error("Submission error:", err);
+        alert("Failed to record response.");
+      });
+    }
+
+    function rebuildBaseHTML() {
+      document.body.innerHTML = `
+        <div id="visual-container">
+          <img class="media-content" id="stillframe1" src="stillframe1.png" />
+          <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
+          <img class="media-content" id="stillframe2" src="stillframe2.png" />
+          <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
+          <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
+          <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
+        </div>
+        <audio id="myAudio" hidden preload="auto"></audio>
+        <div id="trialControls"></div>
+      `;
+      assignElements();
+      updatePlayButton();
+    }
+  </script>
 </body>
 </html>
