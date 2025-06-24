@@ -77,7 +77,7 @@
     let isPlaying = false;
     let trialQueued = false;
     let participantID = null;
-    let currentAudioFile = ""; // ✅ Track which audio file was used
+    let currentAudioFile = ""; 
 
     const audio = document.getElementById("myAudio");
     const still1 = document.getElementById("stillframe1");
@@ -141,10 +141,10 @@
         participant: participantID,
         timestamp,
         choice,
-        audio: currentAudioFile // ✅ Include filename
+        audio: currentAudioFile 
       };
 
-      const scriptURL = "https://script.google.com/home/projects/1IBkxd5e0dfmPSAEF6q0WlIeKCC_ZjCQVAR_x_1VoqEHWFj49L72VL-K4/edit"; // ✅ Replace with your actual Apps Script URL
+      const scriptURL = "https://script.google.com/macros/s/AKfycbzM7hsd9CQrv-ZiMR57hjNeUnf4hWRFVDkvmFPbQJhs--5kKOkdD3ONJONTkb7498Ni/exec"; 
 
       fetch(scriptURL, {
         method: "POST",
@@ -154,7 +154,7 @@
       .then(res => res.text())
       .then(msg => {
         alert("Response recorded! Thank you.");
-        location.reload(); // Reload for next trial (or remove if doing multiple trials)
+        location.reload(); 
       })
       .catch(err => {
         console.error("Error:", err);
@@ -190,7 +190,7 @@
           const gapSec = parseFloat(gap);
           const testSec = parseFloat(test);
           const audioURL = filename;
-          currentAudioFile = filename; // ✅ Track current audio
+          currentAudioFile = filename; 
 
           await Promise.all([v1.play().then(() => v1.pause()), vGap.play().then(() => vGap.pause()), v2.play().then(() => v2.pause())]);
 
