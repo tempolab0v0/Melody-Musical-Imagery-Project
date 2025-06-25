@@ -82,12 +82,15 @@
     let sessionID = null;
     let currentAudioFile = "";
     let availableAudios = [];
+    let trialStartTime = null;
 
     const visuals = [];
 
     window.onload = async () => {
-      participantID = prompt("Enter your Participant ID:");
-      if (!participantID) participantID = "anon_" + Math.floor(Math.random() * 100000);
+      while (!participantID) {
+        participantID = prompt("Enter your Participant ID:");
+        if (participantID) participantID = participantID.trim();
+      }
       sessionID = `${participantID}_${new Date().toISOString()}`;
 
       try {
@@ -182,7 +185,9 @@
           audio.onerror = () => reject("Audio failed to load");
         });
 
+        trialStartTime = performance.now(); // Start RT clock
         let currentVisual = null;
+
         function updateVisuals() {
           const time = audio.currentTime;
           for (const v of visuals) {
@@ -241,13 +246,15 @@
     }
 
     function handleResponse(choice) {
+      const reactionTime = performance.now() - trialStartTime;
       const entry = {
         participant: participantID,
         session: sessionID,
         trial_num: trialCounter,
         timestamp: new Date().toISOString(),
         choice,
-        audio: currentAudioFile
+        audio: currentAudioFile,
+        reaction_time_ms: Math.round(reactionTime)
       };
 
       const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
@@ -298,3 +305,4 @@
   </script>
 </body>
 </html>
+
