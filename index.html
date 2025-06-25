@@ -76,6 +76,8 @@
   </div>
 
   <script>
+  let responseSubmitted = false;
+  
     const totalTrials = 3;
     let trialCounter = 1;
     let participantID = null;
@@ -238,7 +240,10 @@
   `;
 }
 
-  function handleResponse(choice) {
+function handleResponse(choice) {
+  if (responseSubmitted) return; // Prevent double clicks
+  responseSubmitted = true;
+
   const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
 
   const entry = {
@@ -264,10 +269,12 @@
     if (trialCounter > totalTrials) {
       document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
     } else {
+      responseSubmitted = false; // reset for next trial
       rebuildBaseHTML();
     }
   })
   .catch(err => {
+    responseSubmitted = false;
     console.error("Submission error:", err);
     alert("Failed to record response.");
   });
