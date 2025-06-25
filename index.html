@@ -217,68 +217,62 @@
       }
     }
 
-    function showResponseOptions() {
-      document.body.innerHTML = "";
-      const question = document.createElement("h1");
-      question.textContent = "Which elevator did Melody ride?";
-      document.body.appendChild(question);
+  function showResponseOptions() {
+  document.body.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
+      <h1>Which elevator did Melody ride?</h1>
+      <p style="max-width: 600px; font-size: 1.1em; margin-bottom: 30px;">
+        Based on what you just saw and heard, click the elevator you think Melody rode. One elevator was normal, the other had a fault.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 80px;">
+        <div style="text-align: center;">
+          <img src="normal.jpg" class="elevator-option" alt="Normal Elevator" onclick="handleResponse('normal')">
+          <div style="margin-top: 12px; font-weight: bold;">Normal Elevator</div>
+        </div>
+        <div style="text-align: center;">
+          <img src="wonky.png" class="elevator-option" alt="Wonky Elevator" onclick="handleResponse('wonky')">
+          <div style="margin-top: 12px; font-weight: bold;">Wonky Elevator</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
-      const options = document.createElement("div");
-      options.style.display = "flex";
-      options.style.justifyContent = "center";
-      options.style.marginTop = "40px";
+  function handleResponse(choice) {
+  const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
 
-      const normal = document.createElement("img");
-      normal.src = "normal.jpg";
-      normal.className = "elevator-option";
-      normal.alt = "Normal Elevator";
-      normal.onclick = () => handleResponse("normal");
+  const entry = {
+    participant: participantID,
+    session: sessionID,
+    trial_num: trialCounter,
+    timestamp: new Date().toISOString(),
+    choice,
+    audio: currentAudioFile,
+    reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
+  };
 
-      const wonky = document.createElement("img");
-      wonky.src = "wonky.png";
-      wonky.className = "elevator-option";
-      wonky.alt = "Wonky Elevator";
-      wonky.onclick = () => handleResponse("wonky");
+  const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
 
-      const order = Math.random() < 0.5 ? [normal, wonky] : [wonky, normal];
-      order.forEach(el => options.appendChild(el));
-      document.body.appendChild(options);
+  fetch(backendlessURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry)
+  })
+  .then(res => res.json())
+  .then(() => {
+    trialCounter++;
+    if (trialCounter > totalTrials) {
+      document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
+    } else {
+      rebuildBaseHTML();
     }
-
-    function handleResponse(choice) {
-      const reactionTime = performance.now() - trialStartTime;
-      const entry = {
-        participant: participantID,
-        session: sessionID,
-        trial_num: trialCounter,
-        timestamp: new Date().toISOString(),
-        choice,
-        audio: currentAudioFile,
-        reaction_time_ms: Math.round(reactionTime)
-      };
-
-      const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
-
-      fetch(backendlessURL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(entry)
-      })
-      .then(res => res.json())
-      .then(() => {
-        trialCounter++;
-        if (trialCounter > totalTrials) {
-          document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
-        } else {
-          rebuildBaseHTML();
-        }
-      })
-      .catch(err => {
-        console.error("Submission error:", err);
-        alert("Failed to record response.");
-      });
-    }
-
+  })
+  .catch(err => {
+    console.error("Submission error:", err);
+    alert("Failed to record response.");
+  });
+}
+ 
     function rebuildBaseHTML() {
       document.body.innerHTML = `
         <div id="visual-container">
