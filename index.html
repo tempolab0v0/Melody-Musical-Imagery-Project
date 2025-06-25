@@ -60,7 +60,9 @@
     }
   </style>
 </head>
+
 <body>
+  <!-- Container for visuals (stillframes and videos) -->
   <div id="visual-container">
     <img class="media-content" id="stillframe1" src="stillframe1.png" />
     <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
@@ -71,13 +73,15 @@
   </div>
 
   <audio id="myAudio" hidden preload="auto"></audio>
+
+  <!-- Button to start each trial -->
   <div id="trialControls">
     <button id="playButton">Press to Begin Trial</button>
   </div>
 
   <script>
+    // Experiment variables
     let responseSubmitted = false;
-
     const totalTrials = 3;
     let trialCounter = 1;
     let participantID = null;
@@ -85,9 +89,9 @@
     let currentAudioFile = "";
     let availableAudios = [];
     let trialStartTime = null;
-
     const visuals = [];
 
+    // Initialization: Get participant ID and load audio metadata
     window.onload = async () => {
       while (!participantID) {
         participantID = prompt("Enter your Participant ID:");
@@ -111,6 +115,7 @@
       updatePlayButton();
     };
 
+    // Create mapping of each visual element in sequence
     function setupVisualElements() {
       const still1 = document.getElementById("stillframe1");
       const still2 = document.getElementById("stillframe2");
@@ -129,12 +134,14 @@
       );
     }
 
+    // Update play button and trial info
     function updatePlayButton() {
       const trialControls = document.getElementById("trialControls");
       trialControls.innerHTML = `<button id="playButton">Press to Begin Trial ${trialCounter} of ${totalTrials}</button>`;
       document.getElementById("playButton").addEventListener("click", playTrial);
     }
 
+    // Hide all media and reset videos
     function hideAll() {
       visuals.forEach(v => {
         v.el.style.display = "none";
@@ -145,6 +152,7 @@
       });
     }
 
+    // Execute one full trial: audio + visual playback in sync
     async function playTrial() {
       document.getElementById("trialControls").innerHTML = "";
       hideAll();
@@ -159,12 +167,9 @@
         currentAudioFile = filename;
 
         const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
-        await Promise.all([
-          v1.play().then(() => v1.pause()),
-          vGap.play().then(() => vGap.pause()),
-          v2.play().then(() => v2.pause())
-        ]);
+        await Promise.all([v1.play().then(() => v1.pause()), vGap.play().then(() => vGap.pause()), v2.play().then(() => v2.pause())]);
 
+        // Calculate display timing for each visual segment
         const video1Sec = v1.duration;
         const gapVideoSec = vGap.duration;
         const video2Sec = v2.duration;
@@ -186,14 +191,16 @@
         visuals[5].start = t;
         visuals[5].end = t += postStillSec;
 
+        // Wait for audio to be ready
         await new Promise((resolve, reject) => {
           audio.oncanplaythrough = resolve;
           audio.onerror = () => reject("Audio failed to load");
         });
 
-        trialStartTime = performance.now();
+        trialStartTime = performance.now(); // Start RT clock
         let currentVisual = null;
 
+        // Loop through visuals based on audio time
         function updateVisuals() {
           const time = audio.currentTime;
           for (const v of visuals) {
@@ -223,12 +230,16 @@
       }
     }
 
+    // Display two elevator choices and collect response
     function showResponseOptions() {
       document.body.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
-          <h1>Which elevator did Melody ride?</h1>
+          <h1 style="color: #4b2e83;">Which elevator did Melody ride?</h1>
           <p style="max-width: 600px; font-size: 1.1em; margin-bottom: 30px;">
-            Based on what you just saw and heard, click the elevator you think Melody rode. One elevator was normal, the other had a fault.
+            Now that the music is over, think back to how it sounded before and after the pause.
+            <br><br>
+            If the music stayed the same, choose the <strong>normal</strong> elevator.
+            If the music changed after the pause, choose the <strong>wonky</strong> elevator.
           </p>
           <div style="display: flex; justify-content: center; gap: 80px;">
             <div style="text-align: center;">
@@ -243,15 +254,17 @@
         </div>
       `;
 
+      // Attach one-time click handlers
       document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
       document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"), { once: true });
     }
 
+    // Handle participant response and send data to backend
     function handleResponse(choice) {
       if (responseSubmitted) return;
       responseSubmitted = true;
 
-      // Disable clicks on elevator images
+      // Disable additional clicks
       const imgs = document.querySelectorAll('.elevator-option');
       imgs.forEach(img => img.style.pointerEvents = 'none');
 
@@ -290,6 +303,7 @@
       });
     }
 
+    // Reset screen and buttons for the next trial
     function rebuildBaseHTML() {
       document.body.innerHTML = `
         <div id="visual-container">
@@ -308,6 +322,7 @@
       updatePlayButton();
     }
 
+    // Randomize array order
     function shuffleArray(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
