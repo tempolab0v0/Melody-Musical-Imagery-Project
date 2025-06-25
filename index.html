@@ -76,8 +76,8 @@
   </div>
 
   <script>
-  let responseSubmitted = false;
-  
+    let responseSubmitted = false;
+
     const totalTrials = 3;
     let trialCounter = 1;
     let participantID = null;
@@ -159,7 +159,11 @@
         currentAudioFile = filename;
 
         const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
-        await Promise.all([v1.play().then(() => v1.pause()), vGap.play().then(() => vGap.pause()), v2.play().then(() => v2.pause())]);
+        await Promise.all([
+          v1.play().then(() => v1.pause()),
+          vGap.play().then(() => vGap.pause()),
+          v2.play().then(() => v2.pause())
+        ]);
 
         const video1Sec = v1.duration;
         const gapVideoSec = vGap.duration;
@@ -187,7 +191,7 @@
           audio.onerror = () => reject("Audio failed to load");
         });
 
-        trialStartTime = performance.now(); // Start RT clock
+        trialStartTime = performance.now();
         let currentVisual = null;
 
         function updateVisuals() {
@@ -219,67 +223,73 @@
       }
     }
 
-  function showResponseOptions() {
-  document.body.innerHTML = `
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
-      <h1>Which elevator did Melody ride?</h1>
-      <p style="max-width: 600px; font-size: 1.1em; margin-bottom: 30px;">
-        Based on what you just saw and heard, click the elevator you think Melody rode. One elevator was normal, the other had a fault.
-      </p>
-      <div style="display: flex; justify-content: center; gap: 80px;">
-        <div style="text-align: center;">
-          <img src="normal.jpg" class="elevator-option" alt="Normal Elevator" onclick="handleResponse('normal')">
-          <div style="margin-top: 12px; font-weight: bold;">Normal Elevator</div>
+    function showResponseOptions() {
+      document.body.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
+          <h1>Which elevator did Melody ride?</h1>
+          <p style="max-width: 600px; font-size: 1.1em; margin-bottom: 30px;">
+            Based on what you just saw and heard, click the elevator you think Melody rode. One elevator was normal, the other had a fault.
+          </p>
+          <div style="display: flex; justify-content: center; gap: 80px;">
+            <div style="text-align: center;">
+              <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator">
+              <div style="margin-top: 12px; font-weight: bold;">Normal Elevator</div>
+            </div>
+            <div style="text-align: center;">
+              <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator">
+              <div style="margin-top: 12px; font-weight: bold;">Wonky Elevator</div>
+            </div>
+          </div>
         </div>
-        <div style="text-align: center;">
-          <img src="wonky.png" class="elevator-option" alt="Wonky Elevator" onclick="handleResponse('wonky')">
-          <div style="margin-top: 12px; font-weight: bold;">Wonky Elevator</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
+      `;
 
-function handleResponse(choice) {
-  if (responseSubmitted) return; // Prevent double clicks
-  responseSubmitted = true;
-
-  const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
-
-  const entry = {
-    participant: participantID,
-    session: sessionID,
-    trial_num: trialCounter,
-    timestamp: new Date().toISOString(),
-    choice,
-    audio: currentAudioFile,
-    reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
-  };
-
-  const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
-
-  fetch(backendlessURL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entry)
-  })
-  .then(res => res.json())
-  .then(() => {
-    trialCounter++;
-    if (trialCounter > totalTrials) {
-      document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
-    } else {
-      responseSubmitted = false; // reset for next trial
-      rebuildBaseHTML();
+      document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
+      document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"), { once: true });
     }
-  })
-  .catch(err => {
-    responseSubmitted = false;
-    console.error("Submission error:", err);
-    alert("Failed to record response.");
-  });
-}
- 
+
+    function handleResponse(choice) {
+      if (responseSubmitted) return;
+      responseSubmitted = true;
+
+      // Disable clicks on elevator images
+      const imgs = document.querySelectorAll('.elevator-option');
+      imgs.forEach(img => img.style.pointerEvents = 'none');
+
+      const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
+
+      const entry = {
+        participant: participantID,
+        session: sessionID,
+        trial_num: trialCounter,
+        timestamp: new Date().toISOString(),
+        choice,
+        audio: currentAudioFile,
+        reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
+      };
+
+      const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
+
+      fetch(backendlessURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry)
+      })
+      .then(res => res.json())
+      .then(() => {
+        trialCounter++;
+        if (trialCounter > totalTrials) {
+          document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
+        } else {
+          rebuildBaseHTML();
+        }
+      })
+      .catch(err => {
+        console.error("Submission error:", err);
+        alert("Failed to record response.");
+        responseSubmitted = false;
+      });
+    }
+
     function rebuildBaseHTML() {
       document.body.innerHTML = `
         <div id="visual-container">
@@ -293,6 +303,7 @@ function handleResponse(choice) {
         <audio id="myAudio" hidden preload="auto"></audio>
         <div id="trialControls"></div>
       `;
+      responseSubmitted = false;
       setupVisualElements();
       updatePlayButton();
     }
@@ -306,4 +317,3 @@ function handleResponse(choice) {
   </script>
 </body>
 </html>
-
