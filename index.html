@@ -10,7 +10,6 @@
       background-color: white;
       font-family: Arial, sans-serif;
     }
-
     #visual-container {
       width: 90vw;
       height: 80vh;
@@ -25,7 +24,6 @@
       overflow: hidden;
       position: relative;
     }
-
     .media-content {
       width: 100%;
       height: 100%;
@@ -35,7 +33,6 @@
       top: 0;
       left: 0;
     }
-
     #playButton {
       margin: 32px auto 0 auto;
       padding: 20px 48px;
@@ -49,19 +46,16 @@
       box-shadow: 0 4px 12px rgba(75, 46, 131, 0.3);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-
     #playButton:hover {
       transform: scale(1.05);
       box-shadow: 0 6px 18px rgba(75, 46, 131, 0.4);
     }
-
     .elevator-option {
       width: 300px;
       margin: 20px;
       cursor: pointer;
       transition: transform 0.2s ease;
     }
-
     .elevator-option:hover {
       transform: scale(1.05);
     }
@@ -81,18 +75,22 @@
   <div id="trialControls"></div>
 
   <script>
-    let responseSubmitted = false;
+    const TRIALS_PER_BLOCK = 2;
+    const BLOCK_ORDER = ["tempo", "pitch"];
+    const BLOCK_FILES = {
+      tempo: "tempo_trials.csv",
+      pitch: "pitch_trials.csv"
+    };
+
+    let blocks = { tempo: [], pitch: [] };
+    let currentBlockIndex = 0;
     let trialCounter = 1;
     let participantID = null;
     let sessionID = null;
     let currentAudioFile = "";
+    let responseSubmitted = false;
     let trialStartTime = null;
     const visuals = [];
-
-    const TRIALS_PER_BLOCK = 2;
-    const blockOrder = ["tempo", "pitch"];
-    let currentBlockIndex = 0;
-    const blocks = { tempo: [], pitch: [] };
 
     window.onload = async () => {
       while (!participantID) {
@@ -101,38 +99,22 @@
       }
       sessionID = `${participantID}_${new Date().toISOString()}`;
 
-      try {
-        const [tempoCSV, pitchCSV] = await Promise.all([
-          fetch("tempo_trials.csv").then(res => res.text()),
-          fetch("pitch_trials.csv").then(res => res.text())
-        ]);
-
-        blocks.tempo = getRandomSubset(parseCSV(tempoCSV), TRIALS_PER_BLOCK);
-        blocks.pitch = getRandomSubset(parseCSV(pitchCSV), TRIALS_PER_BLOCK);
-
-        setupVisualElements();
-        updatePlayButton();
-      } catch (err) {
-        alert("Failed to load trial files: " + err.message);
+      for (const block of BLOCK_ORDER) {
+        try {
+          const response = await fetch(BLOCK_FILES[block]);
+          const text = await response.text();
+          const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
+          shuffleArray(rows);
+          blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
+        } catch (err) {
+          alert(`Failed to load ${block} block: ` + err.message);
+          return;
+        }
       }
+
+      setupVisualElements();
+      updatePlayButton();
     };
-
-    function parseCSV(text) {
-      return text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
-    }
-
-    function getRandomSubset(array, n) {
-      const copy = [...array];
-      shuffleArray(copy);
-      return copy.slice(0, n);
-    }
-
-    function shuffleArray(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
 
     function setupVisualElements() {
       const still1 = document.getElementById("stillframe1");
@@ -153,8 +135,9 @@
     }
 
     function updatePlayButton() {
-      const blockName = blockOrder[currentBlockIndex].toUpperCase();
-      document.getElementById("trialControls").innerHTML = `<button id="playButton">Begin ${blockName} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
+      const block = BLOCK_ORDER[currentBlockIndex];
+      const trialControls = document.getElementById("trialControls");
+      trialControls.innerHTML = `<button id="playButton">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
       document.getElementById("playButton").addEventListener("click", playTrial);
     }
 
@@ -172,81 +155,172 @@
       document.getElementById("trialControls").innerHTML = "";
       hideAll();
 
-      try {
-        const blockName = blockOrder[currentBlockIndex];
-        const blockTrials = blocks[blockName];
-        const [filename, original, gap, test] = blockTrials[trialCounter - 1];
+      const block = BLOCK_ORDER[currentBlockIndex];
+      const trial = blocks[block][trialCounter - 1];
+      const [filename, original, gap, test] = trial;
 
-        const originalSec = parseFloat(original);
-        const gapSec = parseFloat(gap);
-        const testSec = parseFloat(test);
+      const originalSec = parseFloat(original);
+      const gapSec = parseFloat(gap);
+      const testSec = parseFloat(test);
 
-        const audio = document.getElementById("myAudio");
-        audio.src = filename;
-        currentAudioFile = filename;
+      const audio = document.getElementById("myAudio");
+      audio.src = filename;
+      currentAudioFile = filename;
 
-        const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
-        await Promise.all([v1.play().then(() => v1.pause()), vGap.play().then(() => vGap.pause()), v2.play().then(() => v2.pause())]);
+      const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
+      await Promise.all([v1.play().then(() => v1.pause()), vGap.play().then(() => vGap.pause()), v2.play().then(() => v2.pause())]);
 
-        const video1Sec = v1.duration;
-        const gapVideoSec = vGap.duration;
-        const video2Sec = v2.duration;
+      const video1Sec = v1.duration;
+      const gapVideoSec = vGap.duration;
+      const video2Sec = v2.duration;
+      const preStillSec = Math.max(0, originalSec - video1Sec);
+      const gapStillSec = Math.max(0, gapSec - gapVideoSec);
+      const postStillSec = Math.max(0, testSec - video2Sec);
 
-        const preStillSec = Math.max(0, originalSec - video1Sec);
-        const gapStillSec = Math.max(0, gapSec - gapVideoSec);
-        const postStillSec = Math.max(0, testSec - video2Sec);
+      let t = 0;
+      visuals[0].start = t;
+      visuals[0].end = t += preStillSec;
+      visuals[1].start = t;
+      visuals[1].end = t += video1Sec;
+      visuals[2].start = t;
+      visuals[2].end = t += gapStillSec;
+      visuals[3].start = t;
+      visuals[3].end = t += gapVideoSec;
+      visuals[4].start = t;
+      visuals[4].end = t += video2Sec;
+      visuals[5].start = t;
+      visuals[5].end = t += postStillSec;
 
-        let t = 0;
-        visuals[0].start = t;
-        visuals[0].end = t += preStillSec;
-        visuals[1].start = t;
-        visuals[1].end = t += video1Sec;
-        visuals[2].start = t;
-        visuals[2].end = t += gapStillSec;
-        visuals[3].start = t;
-        visuals[3].end = t += gapVideoSec;
-        visuals[4].start = t;
-        visuals[4].end = t += video2Sec;
-        visuals[5].start = t;
-        visuals[5].end = t += postStillSec;
+      await new Promise((resolve, reject) => {
+        audio.oncanplaythrough = resolve;
+        audio.onerror = () => reject("Audio failed to load");
+      });
 
-        await new Promise((resolve, reject) => {
-          audio.oncanplaythrough = resolve;
-          audio.onerror = () => reject("Audio failed to load");
-        });
+      trialStartTime = performance.now();
+      let currentVisual = null;
 
-        trialStartTime = performance.now();
-        let currentVisual = null;
-
-        function updateVisuals() {
-          const time = audio.currentTime;
-          for (const v of visuals) {
-            if (time >= v.start && time < v.end) {
-              if (currentVisual !== v.el) {
-                hideAll();
-                v.el.style.display = "block";
-                if (v.el.tagName === "VIDEO") v.el.play();
-                currentVisual = v.el;
-              }
-              break;
+      function updateVisuals() {
+        const time = audio.currentTime;
+        for (const v of visuals) {
+          if (time >= v.start && time < v.end) {
+            if (currentVisual !== v.el) {
+              hideAll();
+              v.el.style.display = "block";
+              if (v.el.tagName === "VIDEO") v.el.play();
+              currentVisual = v.el;
             }
-          }
-          if (time < visuals[visuals.length - 1].end) {
-            requestAnimationFrame(updateVisuals);
-          } else {
-            hideAll();
-            showResponseOptions();
+            break;
           }
         }
-
-        await audio.play();
-        updateVisuals();
-      } catch (err) {
-        console.error(err);
-        alert("An error occurred during playback.");
+        if (time < visuals[visuals.length - 1].end) {
+          requestAnimationFrame(updateVisuals);
+        } else {
+          hideAll();
+          showResponseOptions();
+        }
       }
+
+      await audio.play();
+      updateVisuals();
     }
 
+    function showResponseOptions() {
+      document.body.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
+          <h1 style="color: #4b2e83;">Which elevator did Melody ride?</h1>
+          <p style="max-width: 600px; font-size: 1.1em; margin-bottom: 30px;">
+            Now that the music is over, think back to how it sounded before and after the pause.<br><br>
+            If the music stayed the same, choose the <strong>normal</strong> elevator.<br>
+            If the music changed after the pause, choose the <strong>wonky</strong> elevator.
+          </p>
+          <div style="display: flex; justify-content: center; gap: 80px;">
+            <div style="text-align: center;">
+              <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator">
+              <div style="margin-top: 12px; font-weight: bold;">Normal Elevator</div>
+            </div>
+            <div style="text-align: center;">
+              <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator">
+              <div style="margin-top: 12px; font-weight: bold;">Wonky Elevator</div>
+            </div>
+          </div>
+        </div>`;
+
+      document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
+      document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"), { once: true });
+    }
+
+    function handleResponse(choice) {
+      if (responseSubmitted) return;
+      responseSubmitted = true;
+      const imgs = document.querySelectorAll('.elevator-option');
+      imgs.forEach(img => img.style.pointerEvents = 'none');
+
+      const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
+      const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
+      const correctAnswer = isNormal ? "normal" : "wonky";
+
+      const entry = {
+        participant: participantID,
+        session: sessionID,
+        block: BLOCK_ORDER[currentBlockIndex],
+        trial_num: trialCounter,
+        timestamp: new Date().toISOString(),
+        choice,
+        audio: currentAudioFile,
+        correct_answer: correctAnswer,
+        reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
+      };
+
+      const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
+
+      fetch(backendlessURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry)
+      })
+      .then(res => res.json())
+      .then(() => {
+        trialCounter++;
+        if (trialCounter > TRIALS_PER_BLOCK) {
+          trialCounter = 1;
+          currentBlockIndex++;
+        }
+        if (currentBlockIndex >= BLOCK_ORDER.length) {
+          document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
+        } else {
+          rebuildBaseHTML();
+        }
+      })
+      .catch(err => {
+        console.error("Submission error:", err);
+        alert("Failed to record response.");
+        responseSubmitted = false;
+      });
+    }
+
+    function rebuildBaseHTML() {
+      document.body.innerHTML = `
+        <div id="visual-container">
+          <img class="media-content" id="stillframe1" src="stillframe1.png" />
+          <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
+          <img class="media-content" id="stillframe2" src="stillframe2.png" />
+          <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
+          <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
+          <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
+        </div>
+        <audio id="myAudio" hidden preload="auto"></audio>
+        <div id="trialControls"></div>`;
+      responseSubmitted = false;
+      setupVisualElements();
+      updatePlayButton();
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
   </script>
 </body>
 </html>
