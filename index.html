@@ -75,6 +75,18 @@
   <div id="trialControls"></div>
 
   <script>
+
+    const PRACTICE_TRIALS = {
+  tempo: [
+    { filename: "PT_FAST1.mp4", narration: "This music is fast. The elevator sped up the song!", correct: "wonky", responseRequired: false },
+    { filename: "PT_SLOW2.mp4", narration: "Did the music change?", correct: "wonky", responseRequired: true }
+  ],
+  pitch: [
+    { filename: "PT_HIGH1.mp4", narration: "This music sounds high-pitched. The elevator changed the pitch!", correct: "wonky", responseRequired: false },
+    { filename: "PT_LOW2.mp4", narration: "Did the music change?", correct: "wonky", responseRequired: true }
+  ]
+};
+    
     const TRIALS_PER_BLOCK = 2;
     const BLOCK_ORDER = ["tempo", "pitch"];
     const BLOCK_FILES = {
@@ -113,7 +125,7 @@
       }
 
       setupVisualElements();
-      updatePlayButton();
+      runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
     };
 
     function setupVisualElements() {
@@ -151,6 +163,89 @@
       });
     }
 
+async function runPracticeTrials(blockType) {
+  const container = document.getElementById("visual-container");
+  document.getElementById("trialControls").innerHTML = "";
+
+  let i = 0;
+
+  async function playNextPractice() {
+    if (i >= PRACTICE_TRIALS[blockType].length) {
+      updatePlayButton(); // Start real trials
+      return;
+    }
+
+    const trial = PRACTICE_TRIALS[blockType][i];
+    container.innerHTML = `<video id="practiceVideo" class="media-content" playsinline muted preload="auto"></video>`;
+    const video = document.getElementById("practiceVideo");
+    video.src = trial.filename;
+
+    const narrationBox = document.createElement("div");
+    narrationBox.style = "position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.9); padding: 20px; border-radius: 12px; font-size: 1.5em; max-width: 80%;";
+    narrationBox.textContent = trial.narration;
+    container.appendChild(narrationBox);
+
+    video.style.display = "block";
+    await video.play();
+    await new Promise(resolve => video.onended = resolve);
+
+    container.removeChild(narrationBox);
+    i++;
+
+    if (trial.responseRequired) {
+      showPracticeChoice(trial.correct, playNextPractice);
+    } else {
+      const feedback = document.createElement("div");
+      feedback.style = "font-size: 1.3em; margin-top: 20px;";
+      feedback.innerHTML = `That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.`;
+      document.getElementById("trialControls").appendChild(feedback);
+      setTimeout(() => {
+        document.getElementById("trialControls").innerHTML = "";
+        playNextPractice();
+      }, 4000);
+    }
+  }
+
+  playNextPractice();
+}
+
+    function showPracticeChoice(correctAnswer, onComplete) {
+  document.getElementById("trialControls").innerHTML = `
+    <h2>Which elevator did Melody ride?</h2>
+    <div style="display: flex; justify-content: center; gap: 60px; margin-top: 20px;">
+      <div>
+        <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator">
+        <div style="text-align: center; margin-top: 10px;">Normal</div>
+      </div>
+      <div>
+        <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator">
+        <div style="text-align: center; margin-top: 10px;">Wonky</div>
+      </div>
+    </div>
+    <div id="practiceFeedback" style="margin-top: 30px; font-size: 1.2em;"></div>
+  `;
+
+  document.getElementById("normalElevator").addEventListener("click", () => {
+    showPracticeFeedback("normal" === correctAnswer, onComplete);
+  }, { once: true });
+
+  document.getElementById("wonkyElevator").addEventListener("click", () => {
+    showPracticeFeedback("wonky" === correctAnswer, onComplete);
+  }, { once: true });
+}
+
+function showPracticeFeedback(isCorrect, onComplete) {
+  const fb = document.getElementById("practiceFeedback");
+  fb.innerHTML = isCorrect
+    ? "<span style='color: green;'>Correct!</span> Great job!"
+    : "<span style='color: red;'>Oops!</span> That was actually the <strong>" + (isCorrect ? "normal" : "wonky") + "</strong> elevator.";
+  setTimeout(() => {
+    document.getElementById("trialControls").innerHTML = "";
+    onComplete();
+  }, 3000);
+}
+
+    
     async function playTrial() {
       document.getElementById("trialControls").innerHTML = "";
       hideAll();
