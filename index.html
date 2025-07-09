@@ -72,20 +72,22 @@
   </div>
 
   <audio id="myAudio" hidden preload="auto"></audio>
+  <audio id="narrationAudio" hidden preload="auto"></audio>
   <div id="trialControls"></div>
 
   <script>
 
     const PRACTICE_TRIALS = {
   tempo: [
-    { filename: "PT_FAST1.mp4", narration: "This music is fast. The elevator sped up the song!", correct: "wonky", responseRequired: false },
-    { filename: "PT_SLOW2.mp4", narration: "Did the music change?", correct: "wonky", responseRequired: true }
+    { video: "PT_FAST1.mp4", narrationText: "This music is fast. The elevator sped up the song!", narrationAudio: "fast1_narration.mp3", correct: "wonky", responseRequired: false },
+    { video: "PT_SLOW2.mp4", narrationText: "Did the music change?", narrationAudio: "slow2_narration.mp3", correct: "wonky", responseRequired: true }
   ],
   pitch: [
-    { filename: "PT_HIGH1.mp4", narration: "This music sounds high-pitched. The elevator changed the pitch!", correct: "wonky", responseRequired: false },
-    { filename: "PT_LOW2.mp4", narration: "Did the music change?", correct: "wonky", responseRequired: true }
+    { video: "PT_HIGH1.mp4", narrationText: "This music sounds high-pitched. The elevator changed the pitch!", narrationAudio: "high1_narration.mp3", correct: "wonky", responseRequired: false },
+    { video: "PT_LOW2.mp4", narrationText: "Did the music change?", narrationAudio: "low2_narration.mp3", correct: "wonky", responseRequired: true }
   ]
 };
+
     
     const TRIALS_PER_BLOCK = 2;
     const BLOCK_ORDER = ["tempo", "pitch"];
@@ -169,45 +171,70 @@ async function runPracticeTrials(blockType) {
 
   let i = 0;
 
+ async function runPracticeTrials(blockType) {
+  const container = document.getElementById("visual-container");
+  const trialControls = document.getElementById("trialControls");
+  container.innerHTML = ""; // Clear videos
+
+  const narrationAudio = document.getElementById("narrationAudio");
+  let i = 0;
+
+  function showNarrationScreen(trial, nextStep) {
+    trialControls.innerHTML = `
+      <div style="padding: 40px; font-size: 1.4em; max-width: 800px; margin: auto;">
+        <p>${trial.narrationText}</p>
+        <button id="continueButton" style="margin-top: 20px; padding: 12px 24px; font-size: 1em; border-radius: 8px;">Continue</button>
+      </div>
+    `;
+    narrationAudio.src = trial.narrationAudio;
+    narrationAudio.play();
+
+    narrationAudio.onended = () => {
+      document.getElementById("continueButton").disabled = false;
+    };
+
+    document.getElementById("continueButton").addEventListener("click", () => {
+      trialControls.innerHTML = "";
+      nextStep();
+    });
+  }
+
   async function playNextPractice() {
     if (i >= PRACTICE_TRIALS[blockType].length) {
-      updatePlayButton(); // Start real trials
+      updatePlayButton(); // Move to real trials
       return;
     }
 
     const trial = PRACTICE_TRIALS[blockType][i];
-    container.innerHTML = `<video id="practiceVideo" class="media-content" playsinline muted preload="auto"></video>`;
-    const video = document.getElementById("practiceVideo");
-    video.src = trial.filename;
-
-    const narrationBox = document.createElement("div");
-    narrationBox.style = "position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.9); padding: 20px; border-radius: 12px; font-size: 1.5em; max-width: 80%;";
-    narrationBox.textContent = trial.narration;
-    container.appendChild(narrationBox);
-
-    video.style.display = "block";
-    await video.play();
-    await new Promise(resolve => video.onended = resolve);
-
-    container.removeChild(narrationBox);
     i++;
 
-    if (trial.responseRequired) {
-      showPracticeChoice(trial.correct, playNextPractice);
-    } else {
-      const feedback = document.createElement("div");
-      feedback.style = "font-size: 1.3em; margin-top: 20px;";
-      feedback.innerHTML = `That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.`;
-      document.getElementById("trialControls").appendChild(feedback);
-      setTimeout(() => {
-        document.getElementById("trialControls").innerHTML = "";
-        playNextPractice();
-      }, 4000);
-    }
+    showNarrationScreen(trial, () => {
+      container.innerHTML = `<video id="practiceVideo" class="media-content" playsinline preload="auto" style="display: block; width: 100%; height: 100%;"></video>`;
+      const video = document.getElementById("practiceVideo");
+      video.src = trial.video;
+
+      video.onended = () => {
+        if (trial.responseRequired) {
+          showPracticeChoice(trial.correct, playNextPractice);
+        } else {
+          const feedback = document.createElement("div");
+          feedback.style = "font-size: 1.3em; margin-top: 20px;";
+          feedback.innerHTML = `That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.`;
+          trialControls.appendChild(feedback);
+          setTimeout(() => {
+            trialControls.innerHTML = "";
+            playNextPractice();
+          }, 4000);
+        }
+      };
+
+      video.play();
+    });
   }
 
   playNextPractice();
 }
+
 
     function showPracticeChoice(correctAnswer, onComplete) {
   document.getElementById("trialControls").innerHTML = `
