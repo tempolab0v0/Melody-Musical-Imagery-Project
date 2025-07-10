@@ -122,13 +122,51 @@
   let trialStartTime = null;
   const visuals = [];
 
-  window.onload = async () => {
-    while (!participantID) {
-      participantID = prompt("Enter your Participant ID:");
-      if (participantID) participantID = participantID.trim();
-    }
-    sessionID = `${participantID}_${new Date().toISOString()}`;
+window.onload = async () => {
+  while (!participantID) {
+    participantID = prompt("Enter your Participant ID:");
+    if (participantID) participantID = participantID.trim();
+  }
+  sessionID = `${participantID}_${new Date().toISOString()}`;
 
+  showIntroScreen();
+};
+
+function showIntroScreen() {
+  document.body.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; padding: 40px; box-sizing: border-box;">
+      <div style="flex: 1; display: flex; justify-content: center;">
+        <img src="melody.png" alt="Melody character" style="max-height: 80vh; max-width: 90%; border-radius: 20px;">
+      </div>
+      <div style="flex: 1; padding: 30px;">
+        <p style="font-size: 1.5em; line-height: 1.6;">
+          Hi there! My name is Melody, and I love music!<br><br>
+          Every day, I ride a magical elevator that sometimes makes music sound... a little different.<br><br>
+          Let’s explore how the music changes – and you can help me figure it out!
+        </p>
+        <button id="continueIntro" style="margin-top: 30px; padding: 14px 28px; font-size: 1em; border-radius: 10px; background-color: #4b2e83; color: white; border: none;">Continue</button>
+      </div>
+    </div>
+    <audio id="introAudio" src="intro_narration.mp3" autoplay></audio>
+  `;
+
+  const introAudio = document.getElementById("introAudio");
+  const continueBtn = document.getElementById("continueIntro");
+  continueBtn.disabled = true;
+
+  introAudio.onended = () => {
+    continueBtn.disabled = false;
+  };
+
+  continueBtn.addEventListener("click", async () => {
+    // Restore base HTML layout and start practice
+    document.body.innerHTML = `
+      <div id="visual-container"></div>
+      <audio id="myAudio" hidden preload="auto"></audio>
+      <div id="trialControls"></div>`;
+    setupVisualElements();
+
+    // Load block files now
     for (const block of BLOCK_ORDER) {
       try {
         const response = await fetch(BLOCK_FILES[block]);
@@ -143,7 +181,8 @@
     }
 
     runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
-  };
+  });
+}
 
   function setupVisualElements() {
     const still1 = document.getElementById("stillframe1");
