@@ -142,8 +142,8 @@ function showIntroScreen() {
         <p style="font-size: 1.5em; line-height: 1.6;">
           Hi there! <br>
           My name is Melody, and I love music! <br>
-Every day, I ride an elevator to get to music class. <br>
-But today, something strange is happening... 
+          Every day, I ride an elevator to get to music class. <br>
+          But today, something strange is happening... 
         </p>
         <button id="continueIntro" style="margin-top: 30px; padding: 14px 28px; font-size: 1em; border-radius: 10px; background-color: #4b2e83; color: white; border: none;">Continue</button>
       </div>
@@ -159,29 +159,42 @@ But today, something strange is happening...
     continueBtn.disabled = false;
   };
 
-  continueBtn.addEventListener("click", async () => {
-    // Restore base HTML layout and start practice
+  continueBtn.addEventListener("click", () => {
+    // Show clean screen and play intro video + narration
     document.body.innerHTML = `
-      <div id="visual-container"></div>
-      <audio id="myAudio" hidden preload="auto"></audio>
-      <div id="trialControls"></div>`;
-    setupVisualElements();
+      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background-color: white;">
+        <video id="introVideo" playsinline style="max-width: 90vw; max-height: 90vh;"></video>
+        <audio id="introNarration2" hidden></audio>
+      </div>
+    `;
 
-    // Load block files now
-    for (const block of BLOCK_ORDER) {
-      try {
-        const response = await fetch(BLOCK_FILES[block]);
-        const text = await response.text();
-        const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
-        shuffleArray(rows);
-        blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
-      } catch (err) {
-        alert(`Failed to load ${block} block: ` + err.message);
-        return;
+    const video = document.getElementById("introVideo");
+    const audio = document.getElementById("introNarration2");
+    video.src = "intro_video.mp4";
+    audio.src = "intro_narration2.mp3";
+
+    let videoEnded = false;
+    let audioEnded = false;
+
+    function checkDone() {
+      if (videoEnded && audioEnded) {
+        rebuildBaseHTML();
+        runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
       }
     }
 
-    runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
+    video.onended = () => {
+      videoEnded = true;
+      checkDone();
+    };
+
+    audio.onended = () => {
+      audioEnded = true;
+      checkDone();
+    };
+
+    video.play();
+    audio.play();
   });
 }
 
