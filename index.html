@@ -159,15 +159,51 @@ But today, something strange is happening...
     continueBtn.disabled = false;
   };
 
-  continueBtn.addEventListener("click", async () => {
-    // Restore base HTML layout and start practice
-    document.body.innerHTML = `
-      <div id="visual-container"></div>
-      <audio id="myAudio" hidden preload="auto"></audio>
-      <div id="trialControls"></div>`;
-    setupVisualElements();
+continueBtn.addEventListener("click", async () => {
+  // Clear screen and show intro video with audio
+  document.body.innerHTML = `
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: white;">
+      <video id="introVideo" src="intro_video.mp4" playsinline style="max-width: 90%; max-height: 90%;" preload="auto"></video>
+      <audio id="introAudio2" src="intro_narration2.mp3" preload="auto"></audio>
+    </div>
+  `;
 
-    // Load block files now
+  const video = document.getElementById("introVideo");
+  const audio = document.getElementById("introAudio2");
+
+  try {
+    await Promise.all([
+      video.play().catch(() => {}),
+      audio.play().catch(() => {})
+    ]);
+  } catch (err) {
+    console.warn("Autoplay blocked, retrying after user interaction");
+    video.muted = true;
+    await video.play();
+    await audio.play();
+  }
+
+  // When both video and audio end, proceed
+  let endedCount = 0;
+  function checkDone() {
+    endedCount++;
+    if (endedCount === 2) startExperiment();
+  }
+
+  video.onended = checkDone;
+  audio.onended = checkDone;
+});
+
+function startExperiment() {
+  // Restore main experiment UI and begin loading data
+  document.body.innerHTML = `
+    <div id="visual-container"></div>
+    <audio id="myAudio" hidden preload="auto"></audio>
+    <div id="trialControls"></div>`;
+  setupVisualElements();
+
+  // Load trial files and begin
+  (async () => {
     for (const block of BLOCK_ORDER) {
       try {
         const response = await fetch(BLOCK_FILES[block]);
@@ -180,9 +216,8 @@ But today, something strange is happening...
         return;
       }
     }
-
     runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
-  });
+  })();
 }
 
   function setupVisualElements() {
