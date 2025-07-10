@@ -90,393 +90,342 @@
   <div id="trialControls"></div>
 
   <script>
-    // ---------------- CONFIGURATION ---------------- //
-    const INTRO_IMG = "melody_cat.png";          // picture of Melody the cat
-    const INTRO_NARRATION = "intro_narration.mp3"; // narration audio file
+  const TRIALS_PER_BLOCK = 2;
+  const BLOCK_ORDER = ["tempo", "pitch"];
+  const BLOCK_FILES = {
+    tempo: "tempo_trials.csv",
+    pitch: "pitch_trials.csv"
+  };
 
-    const PRACTICE_TRIALS = {
-      tempo: [
-        { video: "PT_FAST1.mp4", narrationText: "This music is fast. The elevator sped up the song!", narrationAudio: "fast1_narration.mp3", correct: "wonky", responseRequired: false },
-        { video: "PT_SLOW2.mp4", narrationText: "Did the music change?", narrationAudio: "slow2_narration.mp3", correct: "wonky", responseRequired: true }
-      ],
-      pitch: [
-        { video: "PT_HIGH1.mp4", narrationText: "This music sounds high‑pitched. The elevator changed the pitch!", narrationAudio: "high1_narration.mp3", correct: "wonky", responseRequired: false },
-        { video: "PT_LOW2.mp4", narrationText: "Did the music change?", narrationAudio: "low2_narration.mp3", correct: "wonky", responseRequired: true }
-      ]
-    };
+  const PRACTICE_TRIALS = {
+    tempo: [
+      { video: "PT_FAST1.mp4", narrationText: "This music is fast. The elevator sped up the song!", correct: "wonky", responseRequired: false },
+      { video: "PT_SLOW2.mp4", narrationText: "Did the music change?", correct: "wonky", responseRequired: true }
+    ],
+    pitch: [
+      { video: "PT_HIGH1.mp4", narrationText: "This music sounds high-pitched. The elevator changed the pitch!", correct: "wonky", responseRequired: false },
+      { video: "PT_LOW2.mp4", narrationText: "Did the music change?", correct: "wonky", responseRequired: true }
+    ]
+  };
 
-    const TRIALS_PER_BLOCK = 2;
-    const BLOCK_ORDER = ["tempo", "pitch"];
-    const BLOCK_FILES  = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
+  let blocks = { tempo: [], pitch: [] };
+  let currentBlockIndex = 0;
+  let trialCounter = 1;
+  let participantID = null;
+  let sessionID = null;
+  let currentAudioFile = "";
+  let responseSubmitted = false;
+  let trialStartTime = null;
+  const visuals = [];
 
-    // ---------------- STATE ---------------- //
-    let blocks = { tempo: [], pitch: [] };
-    let currentBlockIndex = 0;
-    let trialCounter = 1;
-    let participantID = null;
-    let sessionID = null;
-    let currentAudioFile = "";
-    let responseSubmitted = false;
-    let trialStartTime = null;
-    const visuals = [];
+  window.onload = async () => {
+    while (!participantID) {
+      participantID = prompt("Enter your Participant ID:");
+      if (participantID) participantID = participantID.trim();
+    }
+    sessionID = `${participantID}_${new Date().toISOString()}`;
 
-    // ---------------- APP ENTRY ---------------- //
-    window.onload = async () => {
-      while (!participantID) {
-        participantID = prompt("Enter your Participant ID:");
-        if (participantID) participantID = participantID.trim();
+    for (const block of BLOCK_ORDER) {
+      try {
+        const response = await fetch(BLOCK_FILES[block]);
+        const text = await response.text();
+        const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
+        shuffleArray(rows);
+        blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
+      } catch (err) {
+        alert(`Failed to load ${block} block: ` + err.message);
+        return;
       }
-      sessionID = `${participantID}_${new Date().toISOString()}`;
-
-      // Pre‑load blocks from CSV
-      for (const block of BLOCK_ORDER) {
-        try {
-          const response = await fetch(BLOCK_FILES[block]);
-          const text = await response.text();
-          const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
-          shuffleArray(rows);
-          blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
-        } catch (err) {
-          alert(`Failed to load ${block} block: ` + err.message);
-          return;
-        }
-      }
-
-      setupVisualElements();
-      showClickToBegin();
-    };
-
-    // ---------------- INTRO FLOW ---------------- //
-    function showClickToBegin() {
-      const overlay = document.getElementById("overlay");
-      overlay.innerHTML = `<button id="beginBtn" class="btn-primary">Click to begin</button>`;
-      overlay.style.display = "flex";
-      document.getElementById("beginBtn").onclick = () => {
-        showIntroScreen();
-      };
     }
 
-    function showIntroScreen() {
-      const overlay = document.getElementById("overlay");
-      overlay.innerHTML = `
-        <img src="${INTRO_IMG}" alt="Melody the cat" style="max-width: 40%; height: auto; margin-bottom: 30px;" />
-        <div style="font-size: 1.4em; line-height: 1.5; max-width: 600px;">
-          Hi there!<br><br>
-          My name is <strong>Melody</strong>, and I love music!<br><br>
-          Every day, I ride an elevator to get to music class.<br><br>
-          But today, <em>something strange</em> is happening...
+    runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
+  };
+
+  function setupVisualElements() {
+    const still1 = document.getElementById("stillframe1");
+    const still2 = document.getElementById("stillframe2");
+    const gapStill = document.getElementById("gapStillframe");
+    const v1 = document.getElementById("video1");
+    const vGap = document.getElementById("gapVideo");
+    const v2 = document.getElementById("video2");
+    visuals.length = 0;
+    visuals.push(
+      { el: still1, start: 0, end: 0 },
+      { el: v1, start: 0, end: 0 },
+      { el: gapStill, start: 0, end: 0 },
+      { el: vGap, start: 0, end: 0 },
+      { el: v2, start: 0, end: 0 },
+      { el: still2, start: 0, end: 0 }
+    );
+  }
+
+  function updatePlayButton() {
+    const block = BLOCK_ORDER[currentBlockIndex];
+    const trialControls = document.getElementById("trialControls");
+    trialControls.innerHTML = `<button id="playButton">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
+    document.getElementById("playButton").addEventListener("click", playTrial);
+  }
+
+  function hideAll() {
+    visuals.forEach(v => {
+      v.el.style.display = "none";
+      if (v.el.tagName === "VIDEO") {
+        v.el.pause();
+        v.el.currentTime = 0;
+      }
+    });
+  }
+
+  async function playTrial() {
+    document.getElementById("trialControls").innerHTML = "";
+    hideAll();
+
+    const block = BLOCK_ORDER[currentBlockIndex];
+    const trial = blocks[block][trialCounter - 1];
+    const [filename, original, gap, test] = trial;
+
+    const originalSec = parseFloat(original);
+    const gapSec = parseFloat(gap);
+    const testSec = parseFloat(test);
+
+    const audio = document.getElementById("myAudio");
+    audio.src = filename;
+    currentAudioFile = filename;
+
+    const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
+    await Promise.all([v1.play().then(() => v1.pause()), vGap.play().then(() => vGap.pause()), v2.play().then(() => v2.pause())]);
+
+    const video1Sec = v1.duration;
+    const gapVideoSec = vGap.duration;
+    const video2Sec = v2.duration;
+    const preStillSec = Math.max(0, originalSec - video1Sec);
+    const gapStillSec = Math.max(0, gapSec - gapVideoSec);
+    const postStillSec = Math.max(0, testSec - video2Sec);
+
+    let t = 0;
+    visuals[0].start = t;
+    visuals[0].end = t += preStillSec;
+    visuals[1].start = t;
+    visuals[1].end = t += video1Sec;
+    visuals[2].start = t;
+    visuals[2].end = t += gapStillSec;
+    visuals[3].start = t;
+    visuals[3].end = t += gapVideoSec;
+    visuals[4].start = t;
+    visuals[4].end = t += video2Sec;
+    visuals[5].start = t;
+    visuals[5].end = t += postStillSec;
+
+    await new Promise((resolve, reject) => {
+      audio.oncanplaythrough = resolve;
+      audio.onerror = () => reject("Audio failed to load");
+    });
+
+    trialStartTime = performance.now();
+    let currentVisual = null;
+
+    function updateVisuals() {
+      const time = audio.currentTime;
+      for (const v of visuals) {
+        if (time >= v.start && time < v.end) {
+          if (currentVisual !== v.el) {
+            hideAll();
+            v.el.style.display = "block";
+            if (v.el.tagName === "VIDEO") v.el.play();
+            currentVisual = v.el;
+          }
+          break;
+        }
+      }
+      if (time < visuals[visuals.length - 1].end) {
+        requestAnimationFrame(updateVisuals);
+      } else {
+        hideAll();
+        showResponseOptions();
+      }
+    }
+
+    await audio.play();
+    updateVisuals();
+  }
+
+  function showResponseOptions() {
+    document.body.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
+        <h1 style="color: #4b2e83;">Which elevator did Melody ride?</h1>
+        <p style="max-width: 600px; font-size: 1.1em; margin-bottom: 30px;">
+          Now that the music is over, think back to how it sounded before and after the pause.<br><br>
+          If the music stayed the same, choose the <strong>normal</strong> elevator.<br>
+          If the music changed after the pause, choose the <strong>wonky</strong> elevator.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 80px;">
+          <div style="text-align: center;">
+            <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator">
+            <div style="margin-top: 12px; font-weight: bold;">Normal Elevator</div>
+          </div>
+          <div style="text-align: center;">
+            <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator">
+            <div style="margin-top: 12px; font-weight: bold;">Wonky Elevator</div>
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
+    document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"), { once: true });
+  }
+
+  function handleResponse(choice) {
+    if (responseSubmitted) return;
+    responseSubmitted = true;
+    const imgs = document.querySelectorAll('.elevator-option');
+    imgs.forEach(img => img.style.pointerEvents = 'none');
+
+    const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
+    const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
+    const correctAnswer = isNormal ? "normal" : "wonky";
+
+    const entry = {
+      participant: participantID,
+      session: sessionID,
+      block: BLOCK_ORDER[currentBlockIndex],
+      trial_num: trialCounter,
+      timestamp: new Date().toISOString(),
+      choice,
+      audio: currentAudioFile,
+      correct_answer: correctAnswer,
+      reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
+    };
+
+    const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
+
+    fetch(backendlessURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry)
+    })
+    .then(() => {
+      trialCounter++;
+      if (trialCounter > TRIALS_PER_BLOCK) {
+        trialCounter = 1;
+        currentBlockIndex++;
+      }
+      if (currentBlockIndex >= BLOCK_ORDER.length) {
+        document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
+      } else {
+        rebuildBaseHTML();
+        runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
+      }
+    })
+    .catch(err => {
+      console.error("Submission error:", err);
+      alert("Failed to record response.");
+      responseSubmitted = false;
+    });
+  }
+
+  function rebuildBaseHTML() {
+    document.body.innerHTML = `
+      <div id="visual-container"></div>
+      <audio id="myAudio" hidden preload="auto"></audio>
+      <div id="trialControls"></div>`;
+    responseSubmitted = false;
+    setupVisualElements();
+  }
+
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
+  function runPracticeTrials(blockType) {
+    const container = document.getElementById("visual-container");
+    const trialControls = document.getElementById("trialControls");
+    let i = 0;
+
+    function showNarrationScreen(trial, nextStep) {
+      trialControls.innerHTML = `
+        <div style="padding: 40px; font-size: 1.4em; max-width: 800px; margin: auto;">
+          <p>${trial.narrationText}</p>
+          <button id="continueButton" style="margin-top: 20px; padding: 12px 24px; font-size: 1em; border-radius: 8px;">Continue</button>
         </div>
       `;
-      overlay.style.display = "flex";
-
-      const introAudio = document.getElementById("introNarration");
-      introAudio.src = INTRO_NARRATION;
-      introAudio.play();
-
-      introAudio.onended = () => {
-        // Enable a continue button after narration finishes
-        const btn = document.createElement("button");
-        btn.textContent = "Let's find out!";
-        btn.className = "btn-primary";
-        btn.style.marginTop = "40px";
-        btn.onclick = () => {
-          overlay.style.display = "none";
-          runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
-        };
-        overlay.appendChild(btn);
-      };
-    }
-
-    // ---------------- VISUAL SETUP ---------------- //
-    function setupVisualElements() {
-      const still1   = document.getElementById("stillframe1");
-      const still2   = document.getElementById("stillframe2");
-      const gapStill = document.getElementById("gapStillframe");
-      const v1       = document.getElementById("video1");
-      const vGap     = document.getElementById("gapVideo");
-      const v2       = document.getElementById("video2");
-      visuals.length = 0;
-      visuals.push(
-        { el: still1,   start: 0, end: 0 },
-        { el: v1,       start: 0, end: 0 },
-        { el: gapStill, start: 0, end: 0 },
-        { el: vGap,     start: 0, end: 0 },
-        { el: v2,       start: 0, end: 0 },
-        { el: still2,   start: 0, end: 0 }
-      );
-    }
-
-    // ---------------- PRACTICE TRIAL LOGIC (unchanged) ---------------- //
-    async function runPracticeTrials(blockType) {
-      const container = document.getElementById("visual-container");
-      const trialControls = document.getElementById("trialControls");
-      container.innerHTML = ""; // Clear videos for practice
-
-      const narrationAudio = document.getElementById("narrationAudio");
-      let i = 0;
-
-      function showNarrationScreen(trial, nextStep) {
-        trialControls.innerHTML = `
-          <div style="padding: 40px; font-size: 1.4em; max-width: 800px; margin: auto;">
-            <p>${trial.narrationText}</p>
-            <button id="continueButton" class="btn-primary" style="margin-top: 20px;">Continue</button>
-          </div>`;
-        narrationAudio.src = trial.narrationAudio;
-        narrationAudio.play();
-
-        narrationAudio.onended = () => {
-          document.getElementById("continueButton").disabled = false;
-        };
-
-        document.getElementById("continueButton").addEventListener("click", () => {
-          trialControls.innerHTML = "";
-          nextStep();
-        });
-      }
-
-      async function playNextPractice() {
-        if (i >= PRACTICE_TRIALS[blockType].length) {
-          updatePlayButton(); // Proceed to real trials
-          return;
-        }
-
-        const trial = PRACTICE_TRIALS[blockType][i++];
-        showNarrationScreen(trial, () => {
-          container.innerHTML = `<video id="practiceVideo" class="media-content" playsinline preload="auto" style="display:block; width:100%; height:100%;"></video>`;
-          const video = document.getElementById("practiceVideo");
-          video.src = trial.video;
-          video.onended = () => {
-            if (trial.responseRequired) {
-              showPracticeChoice(trial.correct, playNextPractice);
-            } else {
-              const feedback = document.createElement("div");
-              feedback.style = "font-size:1.3em; margin-top:20px;";
-              feedback.innerHTML = `That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.`;
-              trialControls.appendChild(feedback);
-              setTimeout(() => {
-                trialControls.innerHTML = "";
-                playNextPractice();
-              }, 4000);
-            }
-          };
-          video.play();
-        });
-      }
-
-      playNextPractice();
-    }
-
-    function showPracticeChoice(correctAnswer, onComplete) {
-      document.getElementById("trialControls").innerHTML = `
-        <h2>Which elevator did Melody ride?</h2>
-        <div style="display:flex; justify-content:center; gap:60px; margin-top:20px;">
-          <div>
-            <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator">
-            <div style="text-align:center; margin-top:10px;">Normal</div>
-          </div>
-          <div>
-            <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator">
-            <div style="text-align:center; margin-top:10px;">Wonky</div>
-          </div>
-        </div>
-        <div id="practiceFeedback" style="margin-top:30px; font-size:1.2em;"></div>`;
-
-      document.getElementById("normalElevator").addEventListener("click", () => {
-        showPracticeFeedback("normal" === correctAnswer, onComplete);
-      }, { once: true });
-
-      document.getElementById("wonkyElevator").addEventListener("click", () => {
-        showPracticeFeedback("wonky" === correctAnswer, onComplete);
-      }, { once: true });
-    }
-
-    function showPracticeFeedback(isCorrect, onComplete) {
-      const fb = document.getElementById("practiceFeedback");
-      fb.innerHTML = isCorrect ? "<span style='color:green;'>Correct!</span> Great job!" : "<span style='color:red;'>Oops!</span> That was actually the <strong>" + (isCorrect ? "normal" : "wonky") + "</strong> elevator.";
-      setTimeout(() => {
-        document.getElementById("trialControls").innerHTML = "";
-        onComplete();
-      }, 3000);
-    }
-
-    // ---------------- REAL TRIALS (unchanged from original) ---------------- //
-async function playTrial() {
-      document.getElementById("trialControls").innerHTML = "";
-      hideAll();
-
-      const block = BLOCK_ORDER[currentBlockIndex];
-      const trial = blocks[block][trialCounter - 1];
-      const [filename, original, gap, test] = trial;
-
-      const originalSec = parseFloat(original);
-      const gapSec = parseFloat(gap);
-      const testSec = parseFloat(test);
-
-      const audio = document.getElementById("myAudio");
-      audio.src = filename;
-      currentAudioFile = filename;
-
-      const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
-      await Promise.all([v1.play().then(() => v1.pause()), vGap.play().then(() => vGap.pause()), v2.play().then(() => v2.pause())]);
-
-      const video1Sec = v1.duration;
-      const gapVideoSec = vGap.duration;
-      const video2Sec = v2.duration;
-      const preStillSec = Math.max(0, originalSec - video1Sec);
-      const gapStillSec = Math.max(0, gapSec - gapVideoSec);
-      const postStillSec = Math.max(0, testSec - video2Sec);
-
-      let t = 0;
-      visuals[0].start = t;
-      visuals[0].end = t += preStillSec;
-      visuals[1].start = t;
-      visuals[1].end = t += video1Sec;
-      visuals[2].start = t;
-      visuals[2].end = t += gapStillSec;
-      visuals[3].start = t;
-      visuals[3].end = t += gapVideoSec;
-      visuals[4].start = t;
-      visuals[4].end = t += video2Sec;
-      visuals[5].start = t;
-      visuals[5].end = t += postStillSec;
-
-      await new Promise((resolve, reject) => {
-        audio.oncanplaythrough = resolve;
-        audio.onerror = () => reject("Audio failed to load");
+      document.getElementById("continueButton").addEventListener("click", () => {
+        trialControls.innerHTML = "";
+        nextStep();
       });
+    }
 
-      trialStartTime = performance.now();
-      let currentVisual = null;
+    function playNextPractice() {
+      if (i >= PRACTICE_TRIALS[blockType].length) {
+        rebuildBaseHTML();
+        updatePlayButton(); // real trials
+        return;
+      }
 
-      function updateVisuals() {
-        const time = audio.currentTime;
-        for (const v of visuals) {
-          if (time >= v.start && time < v.end) {
-            if (currentVisual !== v.el) {
-              hideAll();
-              v.el.style.display = "block";
-              if (v.el.tagName === "VIDEO") v.el.play();
-              currentVisual = v.el;
-            }
-            break;
+      const trial = PRACTICE_TRIALS[blockType][i];
+      i++;
+
+      showNarrationScreen(trial, () => {
+        container.innerHTML = `<video id="practiceVideo" class="media-content" playsinline preload="auto" style="display: block; width: 100%; height: 100%;"></video>`;
+        const video = document.getElementById("practiceVideo");
+        video.src = trial.video;
+        video.play();
+
+        video.onended = () => {
+          if (trial.responseRequired) {
+            showPracticeChoice(trial.correct, playNextPractice);
+          } else {
+            trialControls.innerHTML = `<div style="font-size: 1.3em; margin-top: 20px;">That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.</div>`;
+            setTimeout(() => {
+              trialControls.innerHTML = "";
+              playNextPractice();
+            }, 4000);
           }
-        }
-        if (time < visuals[visuals.length - 1].end) {
-          requestAnimationFrame(updateVisuals);
-        } else {
-          hideAll();
-          showResponseOptions();
-        }
-      }
-
-      await audio.play();
-      updateVisuals();
-    }
-
-    function showResponseOptions() {
-      document.body.innerHTML = 
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
-          <h1 style="color: #4b2e83;">Which elevator did Melody ride?</h1>
-          <p style="max-width: 600px; font-size: 1.1em; margin-bottom: 30px;">
-            Now that the music is over, think back to how it sounded before and after the pause.<br><br>
-            If the music stayed the same, choose the <strong>normal</strong> elevator.<br>
-            If the music changed after the pause, choose the <strong>wonky</strong> elevator.
-          </p>
-          <div style="display: flex; justify-content: center; gap: 80px;">
-            <div style="text-align: center;">
-              <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator">
-              <div style="margin-top: 12px; font-weight: bold;">Normal Elevator</div>
-            </div>
-            <div style="text-align: center;">
-              <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator">
-              <div style="margin-top: 12px; font-weight: bold;">Wonky Elevator</div>
-            </div>
-          </div>
-        </div>;
-
-      document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
-      document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"), { once: true });
-    }
-
-    function handleResponse(choice) {
-      if (responseSubmitted) return;
-      responseSubmitted = true;
-      const imgs = document.querySelectorAll('.elevator-option');
-      imgs.forEach(img => img.style.pointerEvents = 'none');
-
-      const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
-      const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
-      const correctAnswer = isNormal ? "normal" : "wonky";
-
-      const entry = {
-        participant: participantID,
-        session: sessionID,
-        block: BLOCK_ORDER[currentBlockIndex],
-        trial_num: trialCounter,
-        timestamp: new Date().toISOString(),
-        choice,
-        audio: currentAudioFile,
-        correct_answer: correctAnswer,
-        reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
-      };
-
-      const backendlessURL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
-
-      fetch(backendlessURL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(entry)
-      })
-      .then(res => res.json())
-      .then(() => {
-        trialCounter++;
-        if (trialCounter > TRIALS_PER_BLOCK) {
-          trialCounter = 1;
-          currentBlockIndex++;
-        }
-        if (currentBlockIndex >= BLOCK_ORDER.length) {
-          document.body.innerHTML = <div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>;
-        } else {
-          rebuildBaseHTML();
-        }
-      })
-      .catch(err => {
-        console.error("Submission error:", err);
-        alert("Failed to record response.");
-        responseSubmitted = false;
+        };
       });
     }
 
-    function rebuildBaseHTML() {
-      document.body.innerHTML = 
-        <div id="visual-container">
-          <img class="media-content" id="stillframe1" src="stillframe1.png" />
-          <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
-          <img class="media-content" id="stillframe2" src="stillframe2.png" />
-          <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
-          <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
-          <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
-        </div>
-        <audio id="myAudio" hidden preload="auto"></audio>
-        <div id="trialControls"></div>;
-      responseSubmitted = false;
-      setupVisualElements();
-      updatePlayButton();
-    }
-    // ---------------- UTIL ---------------- //
-    function updatePlayButton() {
-      const block = BLOCK_ORDER[currentBlockIndex];
-      const trialControls = document.getElementById("trialControls");
-      trialControls.innerHTML = `<button id="playButton" class="btn-primary">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
-      document.getElementById("playButton").addEventListener("click", playTrial);
-    }
+    playNextPractice();
+  }
 
-    function shuffleArray(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
+  function showPracticeChoice(correctAnswer, onComplete) {
+    document.getElementById("trialControls").innerHTML = `
+      <h2>Which elevator did Melody ride?</h2>
+      <div style="display: flex; justify-content: center; gap: 60px; margin-top: 20px;">
+        <div>
+          <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator">
+          <div style="text-align: center; margin-top: 10px;">Normal</div>
+        </div>
+        <div>
+          <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator">
+          <div style="text-align: center; margin-top: 10px;">Wonky</div>
+        </div>
+      </div>
+      <div id="practiceFeedback" style="margin-top: 30px; font-size: 1.2em;"></div>
+    `;
+
+    document.getElementById("normalElevator").addEventListener("click", () => {
+      showPracticeFeedback("normal" === correctAnswer, onComplete);
+    }, { once: true });
+
+    document.getElementById("wonkyElevator").addEventListener("click", () => {
+      showPracticeFeedback("wonky" === correctAnswer, onComplete);
+    }, { once: true });
+  }
+
+  function showPracticeFeedback(isCorrect, onComplete) {
+    const fb = document.getElementById("practiceFeedback");
+    fb.innerHTML = isCorrect
+      ? "<span style='color: green;'>Correct!</span> Great job!"
+      : "<span style='color: red;'>Oops!</span> That was actually the <strong>" + (isCorrect ? "normal" : "wonky") + "</strong> elevator.";
+    setTimeout(() => {
+      document.getElementById("trialControls").innerHTML = "";
+      onComplete();
+    }, 3000);
+  }
+
   </script>
 </body>
 </html>
