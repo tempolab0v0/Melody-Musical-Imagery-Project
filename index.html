@@ -202,14 +202,22 @@ function showIntroScreen() {
 
 function showNarrationScreen() {
   document.body.innerHTML = `
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: white; flex-direction: column; text-align: center; padding: 40px;">
-      <div style="font-size: 1.5em; line-height: 1.6;">
-        The magical elevator can do all sorts of silly things to the music!<br><br>
-        Sometimes it makes the music go faster or slower...<br><br>
-        Other times, the music sounds higher or lower than before!<br><br>
-        Let’s practice together so you know what to listen for!
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: white; padding: 60px; box-sizing: border-box;">
+      <!-- Left side: Melody image -->
+      <div style="flex: 1; display: flex; justify-content: center;">
+        <img src="Melody.png" alt="Melody character" style="max-height: 80vh; max-width: 90%; border-radius: 20px;">
       </div>
-      <div id="noteAnimation" style="margin-top: 40px;"></div>
+
+      <!-- Right side: Text and animation -->
+      <div style="flex: 1; padding: 30px; text-align: left; display: flex; flex-direction: column; justify-content: center;">
+        <div style="font-size: 1.6em; color: #4b2e83; font-weight: bold; line-height: 1.6;">
+          The magical elevator can do all sorts of silly things to the music!<br><br>
+          Sometimes it makes the music go faster or slower...<br><br>
+          Other times, the music sounds higher or lower than before!<br><br>
+          Let’s practice together so you know what to listen for!
+        </div>
+      </div>
+
       <audio id="introNarration3" src="intro_narration3.mp3" autoplay></audio>
     </div>
   `;
@@ -219,6 +227,7 @@ function showNarrationScreen() {
     proceedToMainTask();
   };
 }
+
 
 function proceedToMainTask() {
   document.body.innerHTML = `
