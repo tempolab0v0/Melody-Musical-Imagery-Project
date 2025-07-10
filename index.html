@@ -142,46 +142,52 @@ function showIntroScreen() {
         <p style="font-size: 1.5em; line-height: 1.6;">
           Hi there! <br>
           My name is Melody, and I love music! <br>
-Every day, I ride an elevator to get to music class. <br>
-But today, something strange is happening... 
+          Every day, I ride an elevator to get to music class. <br>
+          But today, something strange is happening... 
         </p>
         <button id="continueIntro" style="margin-top: 30px; padding: 14px 28px; font-size: 1em; border-radius: 10px; background-color: #4b2e83; color: white; border: none;">Continue</button>
       </div>
     </div>
-    <audio id="introAudio" src="intro_narration.mp3" autoplay></audio>
+    <audio id="introAudio" src="intro_narration.mp3"></audio>
   `;
 
   const introAudio = document.getElementById("introAudio");
   const continueBtn = document.getElementById("continueIntro");
-  continueBtn.disabled = true;
-
-  introAudio.onended = () => {
-    continueBtn.disabled = false;
-  };
 
   continueBtn.addEventListener("click", async () => {
-    // Restore base HTML layout and start practice
-    document.body.innerHTML = `
-      <div id="visual-container"></div>
-      <audio id="myAudio" hidden preload="auto"></audio>
-      <div id="trialControls"></div>`;
-    setupVisualElements();
+    continueBtn.disabled = true;
 
-    // Load block files now
-    for (const block of BLOCK_ORDER) {
-      try {
-        const response = await fetch(BLOCK_FILES[block]);
-        const text = await response.text();
-        const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
-        shuffleArray(rows);
-        blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
-      } catch (err) {
-        alert(`Failed to load ${block} block: ` + err.message);
-        return;
-      }
+    try {
+      await introAudio.play();
+    } catch (err) {
+      console.warn("Autoplay blocked or failed:", err);
     }
 
-    runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
+    introAudio.onended = async () => {
+      // Restore base layout
+      document.body.innerHTML = `
+        <div id="visual-container"></div>
+        <audio id="myAudio" hidden preload="auto"></audio>
+        <div id="trialControls"></div>`;
+
+      setupVisualElements();
+
+      // Load block files
+      for (const block of BLOCK_ORDER) {
+        try {
+          const response = await fetch(BLOCK_FILES[block]);
+          const text = await response.text();
+          const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
+          shuffleArray(rows);
+          blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
+        } catch (err) {
+          alert(`Failed to load ${block} block: ` + err.message);
+          return;
+        }
+      }
+
+      runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
+    };
   });
 }
 
