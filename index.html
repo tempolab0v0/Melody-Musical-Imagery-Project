@@ -1,3 +1,4 @@
+You said:
 <!DOCTYPE html>
 <html>
 <head>
@@ -127,13 +128,13 @@ window.onload = async () => {
     participantID = prompt("Enter your Participant ID:");
     if (participantID) participantID = participantID.trim();
   }
-  sessionID = `${participantID}_${new Date().toISOString()}`;
+  sessionID = ${participantID}_${new Date().toISOString()};
 
   showIntroScreen();
 };
 
 function showIntroScreen() {
-  document.body.innerHTML = `
+  document.body.innerHTML = 
     <div style="display: flex; align-items: center; justify-content: center; height: 100vh; padding: 40px; box-sizing: border-box;">
       <div style="flex: 1; display: flex; justify-content: center;">
         <img src="Melody.png" alt="Melody character" style="max-height: 80vh; max-width: 90%; border-radius: 20px;">
@@ -142,14 +143,14 @@ function showIntroScreen() {
         <p style="font-size: 1.5em; line-height: 1.6;">
           Hi there! <br>
           My name is Melody, and I love music! <br>
-          Every day, I ride an elevator to get to music class. <br>
-          But today, something strange is happening... 
+Every day, I ride an elevator to get to music class. <br>
+But today, something strange is happening... 
         </p>
         <button id="continueIntro" style="margin-top: 30px; padding: 14px 28px; font-size: 1em; border-radius: 10px; background-color: #4b2e83; color: white; border: none;">Continue</button>
       </div>
     </div>
     <audio id="introAudio" src="intro_narration.mp3" autoplay></audio>
-  `;
+  ;
 
   const introAudio = document.getElementById("introAudio");
   const continueBtn = document.getElementById("continueIntro");
@@ -159,42 +160,29 @@ function showIntroScreen() {
     continueBtn.disabled = false;
   };
 
-  continueBtn.addEventListener("click", () => {
-    // Show clean screen and play intro video + narration
-    document.body.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background-color: white;">
-        <video id="introVideo" playsinline style="max-width: 90vw; max-height: 90vh;"></video>
-        <audio id="introNarration2" hidden></audio>
-      </div>
-    `;
+  continueBtn.addEventListener("click", async () => {
+    // Restore base HTML layout and start practice
+    document.body.innerHTML = 
+      <div id="visual-container"></div>
+      <audio id="myAudio" hidden preload="auto"></audio>
+      <div id="trialControls"></div>;
+    setupVisualElements();
 
-    const video = document.getElementById("introVideo");
-    const audio = document.getElementById("introNarration2");
-    video.src = "intro_video.mp4";
-    audio.src = "intro_narration2.mp3";
-
-    let videoEnded = false;
-    let audioEnded = false;
-
-    function checkDone() {
-      if (videoEnded && audioEnded) {
-        rebuildBaseHTML();
-        runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
+    // Load block files now
+    for (const block of BLOCK_ORDER) {
+      try {
+        const response = await fetch(BLOCK_FILES[block]);
+        const text = await response.text();
+        const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
+        shuffleArray(rows);
+        blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
+      } catch (err) {
+        alert(Failed to load ${block} block:  + err.message);
+        return;
       }
     }
 
-    video.onended = () => {
-      videoEnded = true;
-      checkDone();
-    };
-
-    audio.onended = () => {
-      audioEnded = true;
-      checkDone();
-    };
-
-    video.play();
-    audio.play();
+    runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
   });
 }
 
@@ -208,7 +196,7 @@ function showIntroScreen() {
         shuffleArray(rows);
         blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
       } catch (err) {
-        alert(`Failed to load ${block} block: ` + err.message);
+        alert(Failed to load ${block} block:  + err.message);
         return;
       }
     }
@@ -237,7 +225,7 @@ function showIntroScreen() {
   function updatePlayButton() {
     const block = BLOCK_ORDER[currentBlockIndex];
     const trialControls = document.getElementById("trialControls");
-    trialControls.innerHTML = `<button id="playButton">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
+    trialControls.innerHTML = <button id="playButton">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>;
     document.getElementById("playButton").addEventListener("click", playTrial);
   }
 
@@ -325,7 +313,7 @@ function showIntroScreen() {
   }
 
   function showResponseOptions() {
-    document.body.innerHTML = `
+    document.body.innerHTML = 
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
         <h1 style="color: #4b2e83;">Which elevator did Melody ride?</h1>
         <p style="max-width: 600px; font-size: 1.1em; margin-bottom: 30px;">
@@ -343,7 +331,7 @@ function showIntroScreen() {
             <div style="margin-top: 12px; font-weight: bold;">Wonky Elevator</div>
           </div>
         </div>
-      </div>`;
+      </div>;
 
     document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
     document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"), { once: true });
@@ -385,7 +373,7 @@ function showIntroScreen() {
         currentBlockIndex++;
       }
       if (currentBlockIndex >= BLOCK_ORDER.length) {
-        document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
+        document.body.innerHTML = <div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>;
       } else {
         rebuildBaseHTML();
         runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
@@ -399,10 +387,10 @@ function showIntroScreen() {
   }
 
   function rebuildBaseHTML() {
-    document.body.innerHTML = `
+    document.body.innerHTML = 
       <div id="visual-container"></div>
       <audio id="myAudio" hidden preload="auto"></audio>
-      <div id="trialControls"></div>`;
+      <div id="trialControls"></div>;
     responseSubmitted = false;
     setupVisualElements();
   }
@@ -420,12 +408,12 @@ function showIntroScreen() {
     let i = 0;
 
     function showNarrationScreen(trial, nextStep) {
-      trialControls.innerHTML = `
+      trialControls.innerHTML = 
         <div style="padding: 40px; font-size: 1.4em; max-width: 800px; margin: auto;">
           <p>${trial.narrationText}</p>
           <button id="continueButton" style="margin-top: 20px; padding: 12px 24px; font-size: 1em; border-radius: 8px;">Continue</button>
         </div>
-      `;
+      ;
       document.getElementById("continueButton").addEventListener("click", () => {
         trialControls.innerHTML = "";
         nextStep();
@@ -443,7 +431,7 @@ function showIntroScreen() {
       i++;
 
       showNarrationScreen(trial, () => {
-        container.innerHTML = `<video id="practiceVideo" class="media-content" playsinline preload="auto" style="display: block; width: 100%; height: 100%;"></video>`;
+        container.innerHTML = <video id="practiceVideo" class="media-content" playsinline preload="auto" style="display: block; width: 100%; height: 100%;"></video>;
         const video = document.getElementById("practiceVideo");
         video.src = trial.video;
         video.play();
@@ -452,7 +440,7 @@ function showIntroScreen() {
           if (trial.responseRequired) {
             showPracticeChoice(trial.correct, playNextPractice);
           } else {
-            trialControls.innerHTML = `<div style="font-size: 1.3em; margin-top: 20px;">That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.</div>`;
+            trialControls.innerHTML = <div style="font-size: 1.3em; margin-top: 20px;">That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.</div>;
             setTimeout(() => {
               trialControls.innerHTML = "";
               playNextPractice();
@@ -466,7 +454,7 @@ function showIntroScreen() {
   }
 
   function showPracticeChoice(correctAnswer, onComplete) {
-    document.getElementById("trialControls").innerHTML = `
+    document.getElementById("trialControls").innerHTML = 
       <h2>Which elevator did Melody ride?</h2>
       <div style="display: flex; justify-content: center; gap: 60px; margin-top: 20px;">
         <div>
@@ -479,7 +467,7 @@ function showIntroScreen() {
         </div>
       </div>
       <div id="practiceFeedback" style="margin-top: 30px; font-size: 1.2em;"></div>
-    `;
+    ;
 
     document.getElementById("normalElevator").addEventListener("click", () => {
       showPracticeFeedback("normal" === correctAnswer, onComplete);
