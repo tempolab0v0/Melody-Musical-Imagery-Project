@@ -193,11 +193,31 @@ function showIntroScreen() {
     }
 
     video.onended = () => {
-      proceedToMainTask();
+     showNarrationScreen();
     };
   };
 
   window.addEventListener("click", startPlayback, { once: true });
+}
+
+function showNarrationScreen() {
+  document.body.innerHTML = `
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: white; flex-direction: column; text-align: center; padding: 40px;">
+      <div style="font-size: 1.8em; max-width: 800px; color: #4b2e83; font-weight: bold; line-height: 1.6;">
+        The magical elevator can do all sorts of silly things to the music!<br><br>
+        Sometimes it makes the music go faster or slower...<br><br>
+        Other times, the music sounds higher or lower than before!<br><br>
+        Let’s practice together so you know what to listen for!
+      </div>
+      <div id="noteAnimation" style="margin-top: 40px;"></div>
+      <audio id="introNarration3" src="intro_narration3.mp3" autoplay></audio>
+    </div>
+  `;
+
+  const narration = document.getElementById("introNarration3");
+  narration.onended = () => {
+    proceedToMainTask();
+  };
 }
 
 function proceedToMainTask() {
