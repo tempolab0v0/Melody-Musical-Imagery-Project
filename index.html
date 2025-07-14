@@ -346,10 +346,15 @@ function runTempoPractice() {
 
 function playTempoPracticeVideo(videoFile, correctAnswer, onComplete) {
   setTimeout(() => {
-    document.body.innerHTML = `
+    const container = document.getElementById("visual-container");
+container.innerHTML = `
+  <video id="tempoPracticeVideo" style="width: 100%; height: 100%;" playsinline>
+    <source src="${videoFile}" type="video/mp4">
+  </video>
+`;
       <div style="position: relative; width: 100%; height: 100vh; background: #cce0dd;">
         <img src="/mnt/data/c28e9ada-d439-4a0b-9bd0-341d10674b71.png" style="width: 100%; height: 100%; object-fit: contain;">
-        <video id="tempoPracticeVideo" style="position: absolute; top: 0; width: 100%; height: 100%; object-fit: contain;" playsinline muted>
+        <video id="tempoPracticeVideo" style="position: absolute; top: 0; width: 100%; height: 100%; object-fit: contain;" playsinline>
           <source src="${videoFile}" type="video/mp4">
         </video>
       </div>
