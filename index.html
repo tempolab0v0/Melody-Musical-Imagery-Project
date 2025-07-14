@@ -311,58 +311,88 @@ function playSlowVideo() {
 }
 
 function showTempoInstructions() {
-  document.body.innerHTML = `
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: white; padding: 40px; box-sizing: border-box;">
-      <p style="font-size: 1.5em; line-height: 1.8; max-width: 800px; text-align: center;">
-        Great! Now let's practice some more.<br><br>
-        Listen to the music carefully and tell me if it's <strong>faster</strong>, <strong>slower</strong>, or the <strong>same</strong> as before!
-      </p>
-      <audio id="tempoInstructions" src="PT_TEMPO_INSTRUCTIONS.mp3"></audio>
-    </div>
-  `;
+  setTimeout(() => { // 1–2 sec pause before instructions screen
+    document.body.innerHTML = `
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: white; padding: 40px; box-sizing: border-box;">
+        <p style="font-size: 1.5em; line-height: 1.8; max-width: 800px; text-align: center;">
+          Great! Now let's practice even more.<br><br>
+          Listen carefully and tell me if the music is <strong>faster</strong>, <strong>slower</strong>, or <strong>the same</strong>!
+        </p>
+        <audio id="tempoInstructions" src="PT_TEMPO_INSTRUCTIONS.mp3"></audio>
+      </div>
+    `;
 
-  const audio = document.getElementById("tempoInstructions");
-  audio.play().then(() => {
-    audio.onended = () => {
-      playTempoPracticeVideo("PT_FAST2.mp4", "fast", () => {
-        playTempoPracticeVideo("PT_SLOW2.mp4", "slow", proceedToMainTask);
-      });
-    };
-  }).catch(err => {
-    console.warn("Autoplay issue:", err);
-    playTempoPracticeVideo("PT_FAST2.mp4", "fast", () => {
-      playTempoPracticeVideo("PT_SLOW2.mp4", "slow", proceedToMainTask);
+    const audio = document.getElementById("tempoInstructions");
+    audio.play().then(() => {
+      audio.onended = () => {
+        setTimeout(() => {
+          runTempoPractice();
+        }, 1000); // slight pause after audio
+      };
+    }).catch(err => {
+      console.warn("Autoplay issue:", err);
+      runTempoPractice();
     });
-  });
+  }, 1500);
+}
+
+function runTempoPractice() {
+  const practiceTrials = [
+    { video: "PT_FAST2.mp4", correct: "fast" },
+    { video: "PT_SLOW2.mp4", correct: "slow" }
+  ];
+
+  let i = 0;
+
+  function nextPractice() {
+    if (i >= practiceTrials.length) {
+      showRealTrialsIntro();
+      return;
+    }
+
+    const trial = practiceTrials[i];
+    i++;
+    playTempoPracticeVideo(trial.video, trial.correct, nextPractice);
+  }
+
+  nextPractice();
 }
 
 function playTempoPracticeVideo(videoFile, correctAnswer, onComplete) {
-  document.body.innerHTML = `
-    <video id="practiceTempoVideo" width="100%" height="100%" playsinline style="background:black;">
-      <source src="${videoFile}" type="video/mp4">
-    </video>
-  `;
+  setTimeout(() => {
+    document.body.innerHTML = `
+      <div style="position: relative; width: 100%; height: 100vh; background: #cce0dd;">
+        <img src="/mnt/data/c28e9ada-d439-4a0b-9bd0-341d10674b71.png" style="width: 100%; height: 100%; object-fit: contain;">
+        <video id="tempoPracticeVideo" style="position: absolute; top: 0; width: 100%; height: 100%; object-fit: contain;" playsinline muted>
+          <source src="${videoFile}" type="video/mp4">
+        </video>
+      </div>
+    `;
 
-  const video = document.getElementById("practiceTempoVideo");
-  video.play();
+    const video = document.getElementById("tempoPracticeVideo");
+    video.play();
 
-  video.onended = () => {
-    showTempoResponseScreen(correctAnswer, () => {
-      onComplete();
-    });
-  };
+    video.onended = () => {
+      setTimeout(() => {
+        showTempoResponseScreen(correctAnswer, onComplete);
+      }, 1000); // 1 sec pause before response
+    };
+  }, 1500);
 }
 
 function showTempoResponseScreen(correctAnswer, callback) {
   document.body.innerHTML = `
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
-      <h1 style="color: #4b2e83;">How did the music sound?</h1>
-      <div style="display: flex; gap: 40px; margin-top: 30px;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #cce0dd; padding: 20px;">
+      <img src="/mnt/data/c28e9ada-d439-4a0b-9bd0-341d10674b71.png" style="width: 80%; max-width: 800px;">
+      <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
+      <div style="display: flex; gap: 40px; margin-top: 20px;">
         <button class="tempo-btn" data-choice="fast" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Fast</button>
         <button class="tempo-btn" data-choice="slow" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Slow</button>
         <button class="tempo-btn" data-choice="same" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Same</button>
       </div>
-      <div id="feedback" style="margin-top: 30px; font-size: 1.2em; color: red;"></div>
+      <audio id="correctSound" src="correct_feedback.mp3"></audio>
+      <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
+      <div id="feedback" style="margin-top: 20px; font-size: 1.2em; color: red;"></div>
     </div>
   `;
 
@@ -372,42 +402,35 @@ function showTempoResponseScreen(correctAnswer, callback) {
       const choice = btn.getAttribute('data-choice');
       if (choice === correctAnswer) {
         document.getElementById("feedback").style.color = "green";
-        document.getElementById("feedback").innerHTML = "Correct! Great job!";
-        setTimeout(callback, 2000);
+        document.getElementById("feedback").innerHTML = "Correct!";
+
+        document.getElementById("correctSound").play().then(() => {
+          setTimeout(callback, 1500);
+        });
       } else {
         document.getElementById("feedback").style.color = "red";
-        document.getElementById("feedback").innerHTML = "Oops! Try again. Think carefully about how the music changed.";
+        document.getElementById("feedback").innerHTML = "Oops! Try again.";
+
+        document.getElementById("wrongSound").play();
       }
     });
   });
 }
 
+function showRealTrialsIntro() {
+  setTimeout(() => {
+    document.body.innerHTML = `
+      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: #cce0dd;">
+        <img src="/mnt/data/c28e9ada-d439-4a0b-9bd0-341d10674b71.png" style="width: 80%; max-width: 800px;">
+        <h1 style="margin-top: 30px; color: #4b2e83;">Awesome! Now you're ready for the real trials!</h1>
+        <button id="startRealTrials" style="margin-top: 20px; padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Start</button>
+      </div>
+    `;
 
-function proceedToMainTask() {
-  document.body.innerHTML = `
-    <div id="visual-container"></div>
-    <audio id="myAudio" hidden preload="auto"></audio>
-    <div id="trialControls"></div>
-  `;
-
-  setupVisualElements();
-      // Load block files
- (async () => {
-    for (const block of BLOCK_ORDER) {
-      try {
-        const response = await fetch(BLOCK_FILES[block]);
-        const text = await response.text();
-        const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
-        shuffleArray(rows);
-        blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
-      } catch (err) {
-        alert(`Failed to load ${block} block: ` + err.message);
-        return;
-      }
-    }
-
-    runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
-  })();
+    document.getElementById("startRealTrials").addEventListener("click", () => {
+      startRealTrials(); // Replace this with your real trials function
+    });
+  }, 1500);
 }
 
   function setupVisualElements() {
