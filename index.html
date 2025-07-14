@@ -90,225 +90,211 @@
   <div id="trialControls"></div>
 
   <script>
-
-    const INTRO_IMG = "Melody.png";
-    const INTRO_NARRATION = "intro_narration.mp3";
-    const INTRO_VIDEO = "intro_video.mp4";
-    const INTRO_NARRATION2 = "intro_narration2.mp3";
- 
-    
-  const TRIALS_PER_BLOCK = 2;
-  const BLOCK_ORDER = ["tempo", "pitch"];
-  const BLOCK_FILES = {
-    tempo: "tempo_trials.csv",
-    pitch: "pitch_trials.csv"
-  };
-
-  const PRACTICE_TRIALS = {
-    tempo: [
-      { video: "PT_FAST1.mp4", narrationText: "This music is fast. The elevator sped up the song!", correct: "wonky", responseRequired: false },
-      { video: "PT_SLOW2.mp4", narrationText: "Did the music change?", correct: "wonky", responseRequired: true }
-    ],
-    pitch: [
-      { video: "PT_HIGH1.mp4", narrationText: "This music sounds high-pitched. The elevator changed the pitch!", correct: "wonky", responseRequired: false },
-      { video: "PT_LOW2.mp4", narrationText: "Did the music change?", correct: "wonky", responseRequired: true }
-    ]
-  };
-
-  let blocks = { tempo: [], pitch: [] };
-  let currentBlockIndex = 0;
-  let trialCounter = 1;
-  let participantID = null;
-  let sessionID = null;
-  let currentAudioFile = "";
-  let responseSubmitted = false;
-  let trialStartTime = null;
-  const visuals = [];
-
-window.onload = async () => {
-  while (!participantID) {
-    participantID = prompt("Enter your Participant ID:");
-    if (participantID) participantID = participantID.trim();
-  }
-  sessionID = `${participantID}_${new Date().toISOString()}`;
-
-  showIntroScreen();
-};
-
-function showIntroScreen() {
-  document.body.innerHTML = `
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; padding: 40px; box-sizing: border-box;">
-      <div style="flex: 1; display: flex; justify-content: center;">
-        <img src="Melody.png" alt="Melody character" style="max-height: 80vh; max-width: 90%; border-radius: 20px;">
-      </div>
-      <div style="flex: 1; padding: 30px;">
-        <p style="font-size: 1.5em; line-height: 1.6;">
-          Hi there! <br>
-          My name is Melody, and I love music! <br>
-          Every day, I ride an elevator to get to music class. <br>
-          But today, something strange is happening... 
-        </p>
-        <button id="continueIntro" style="margin-top: 30px; padding: 14px 28px; font-size: 1em; border-radius: 10px; background-color: #4b2e83; color: white; border: none;">Click to Play</button>
-      </div>
-    </div>
-    <audio id="introAudio" src="intro_narration.mp3"></audio>
-  `;
-
-  const introAudio = document.getElementById("introAudio");
-  const continueBtn = document.getElementById("continueIntro");
-
-  continueBtn.addEventListener("click", async () => {
-    continueBtn.disabled = true;
-
-    try {
-      await introAudio.play();
-    } catch (err) {
-      console.warn("Autoplay blocked or failed:", err);
-    }
-
-     introAudio.onended = () => {
-      showIntroVideo();
+    /* --------------------------------------------------
+       GLOBAL CONSTANTS & STATE
+    --------------------------------------------------*/
+    const TRIALS_PER_BLOCK = 2;
+    const BLOCK_ORDER = ["tempo", "pitch"];
+    const BLOCK_FILES = {
+      tempo: "tempo_trials.csv",
+      pitch: "pitch_trials.csv"
     };
-  });
-}
+
+    const PRACTICE_TRIALS = {
+      tempo: [
+        { video: "PT_FAST1.mp4", narrationText: "This music is fast. The elevator sped up the song!", correct: "wonky", responseRequired: false },
+        { video: "PT_SLOW2.mp4", narrationText: "Did the music change?", correct: "wonky", responseRequired: true }
+      ],
+      pitch: [
+        { video: "PT_HIGH1.mp4", narrationText: "This music sounds high‑pitched. The elevator changed the pitch!", correct: "wonky", responseRequired: false },
+        { video: "PT_LOW2.mp4", narrationText: "Did the music change?", correct: "wonky", responseRequired: true }
+      ]
+    };
+
+    let blocks = { tempo: [], pitch: [] };
+    let currentBlockIndex = 0;
+    let trialCounter = 1;
+    let participantID = null;
+    let sessionID = null;
+    let currentAudioFile = "";
+    let responseSubmitted = false;
+    let trialStartTime = null;
+    const visuals = [];
+
+    /* --------------------------------------------------
+       BOOTSTRAP
+    --------------------------------------------------*/
+    window.onload = async () => {
+      while (!participantID) {
+        participantID = prompt("Enter your Participant ID:");
+        if (participantID) participantID = participantID.trim();
+      }
+      sessionID = `${participantID}_${new Date().toISOString()}`;
+      showIntroScreen();
+    };
+
+    /* --------------------------------------------------
+       INTRO FLOW
+    --------------------------------------------------*/
+    function showIntroScreen() {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;padding:40px;box-sizing:border-box;">
+          <div style="flex:1;display:flex;justify-content:center;">
+            <img src="Melody.png" alt="Melody character" style="max-height:80vh;max-width:90%;border-radius:20px;" />
+          </div>
+          <div style="flex:1;padding:30px;">
+            <p style="font-size:1.5em;line-height:1.6;">
+              Hi there!<br>
+              My name is Melody, and I love music!<br>
+              Every day, I ride an elevator to get to music class.<br>
+              But today, something strange is happening...
+            </p>
+            <button id="continueIntro" style="margin-top:30px;padding:14px 28px;font-size:1em;border-radius:10px;background-color:#4b2e83;color:white;border:none;">Click to Play</button>
+          </div>
+        </div>
+        <audio id="introAudio" src="intro_narration.mp3"></audio>
+      `;
+
+      const introAudio = document.getElementById("introAudio");
+      const continueBtn = document.getElementById("continueIntro");
+
+      continueBtn.addEventListener("click", async () => {
+        continueBtn.disabled = true;
+        try {
+          await introAudio.play();
+        } catch (err) {
+          console.warn("Autoplay blocked or failed:", err);
+        }
+        introAudio.onended = showIntroVideo;
+      });
+    }
 
     function showIntroVideo() {
-  document.body.innerHTML = `
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: black;">
-      <video id="introVideo" width="100%" height="100%" playsinline style="max-width: 100%; max-height: 100%;" muted>
-        <source src="intro_video.mp4" type="video/mp4">
-        Your browser does not support the video tag.
-      </video>
-      <audio id="introNarration2" src="intro_narration2.mp3"></audio>
-    </div>
-  `;
-  const video = document.getElementById("introVideo");
-  const narration = document.getElementById("introNarration2");
+      document.body.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:black;">
+          <video id="introVideo" width="100%" height="100%" playsinline style="max-width:100%;max-height:100%;" muted>
+            <source src="intro_video.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <audio id="introNarration2" src="intro_narration2.mp3"></audio>
+        </div>
+      `;
 
-  const startPlayback = async () => {
-    try {
-      await Promise.all([video.play(), narration.play()]);
-    } catch (err) {
-      console.warn("Playback failed:", err);
+      const video = document.getElementById("introVideo");
+      const narration = document.getElementById("introNarration2");
+
+      const startPlayback = async () => {
+        try {
+          await Promise.all([video.play(), narration.play()]);
+        } catch (err) {
+          console.warn("Playback failed:", err);
+        }
+        video.onended = () => setTimeout(showNarrationScreen, 2000);
+      };
+
+      window.addEventListener("click", startPlayback, { once: true });
     }
 
-    video.onended = () => {
-      setTimeout(showNarrationScreen, 2000);    };
-  };
+    function showNarrationScreen() {
+      document.body.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:white;padding:40px;box-sizing:border-box;">
+          <div style="flex:1;display:flex;justify-content:center;">
+            <img src="Melody.png" alt="Melody character" style="max-height:80vh;max-width:90%;border-radius:20px;" />
+          </div>
+          <div style="flex:1;text-align:center;padding:30px;">
+            <p style="font-size:1.3em;line-height:1.8;">
+              The magical elevator can do all sorts of silly things to the music!<br>
+              Sometimes it makes the music go faster or slower...<br>
+              Other times, the music sounds higher or lower than before!<br><br>
+              Let’s practice together so you know what to listen for!
+            </p>
+            <button id="playNarration" style="margin-top:20px;padding:10px 20px;background-color:#4b2e83;color:white;border:none;border-radius:8px;font-size:1em;cursor:pointer;">Click to Play</button>
+            <audio id="introNarration3" src="intro_narration3.mp3"></audio>
+          </div>
+        </div>
+      `;
 
-  window.addEventListener("click", startPlayback, { once: true });
-}
+      const button = document.getElementById("playNarration");
+      const audio = document.getElementById("introNarration3");
 
-function showNarrationScreen() {
-  document.body.innerHTML = `
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: white; padding: 40px; box-sizing: border-box;">
-      <!-- Melody image -->
-      <div style="flex: 1; display: flex; justify-content: center;">
-        <img src="Melody.png" alt="Melody character" style="max-height: 80vh; max-width: 90%; border-radius: 20px;">
-      </div>
-
-      <!-- Text and play button -->
-      <div style="flex: 1; text-align: center; padding: 30px;">
-        <p style="font-size: 1.3em; line-height: 1.8;">
-          The magical elevator can do all sorts of silly things to the music!<br>
-          Sometimes it makes the music go faster or slower...<br>
-          Other times, the music sounds higher or lower than before!<br><br>
-          Let’s practice together so you know what to listen for!
-        </p>
-        <button id="playNarration" style="margin-top: 20px; padding: 10px 20px; background-color: #4b2e83; color: white; border: none; border-radius: 8px; font-size: 1em; cursor: pointer;">Click to Play</button>
-        <audio id="introNarration3" src="intro_narration3.mp3"></audio>
-      </div>
-    </div>
-  `;
-
-  const button = document.getElementById("playNarration");
-  const audio = document.getElementById("introNarration3");
-
-  button.addEventListener("click", async () => {
-    button.disabled = true;
-    try {
-      await audio.play();
-    } catch (err) {
-      console.warn("Audio play failed:", err);
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          await audio.play();
+        } catch (err) {
+          console.warn("Audio play failed:", err);
+        }
+        audio.onended = () => setTimeout(showFastIntro, 1500); // 1.5‑sec pause
+      });
     }
-    audio.onended = () => {
-    setTimeout(() => {
+
+    /* --------------------------------------------------
+       TEMPO PRACTICE FLOW
+    --------------------------------------------------*/
+    function showFastIntro() {
+      document.body.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:white;padding:40px;box-sizing:border-box;">
+          <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
+            First, we’re going to learn about tempo.<br>
+            Tempo is how fast or slow the music goes.<br><br>
+            Ready?<br>
+            Listen to this song and pay attention to how the music changes to become faster when Melody rides the elevator to the second floor.
+          </p>
+          <audio id="fastNarration" src="PT_FAST1_NARRATION.mp3"></audio>
+        </div>
+      `;
+
+      const narration = document.getElementById("fastNarration");
+      narration.play().then(() => {
+        narration.onended = playFastVideo;
+      }).catch(err => {
+        console.warn("Autoplay issue:", err);
         playFastVideo();
-    }, 1500); // Add 1.5 sec pause before next screen
-};
+      });
+    }
 
-function showFastIntro() {
-  document.body.innerHTML = `
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: white; padding: 40px; box-sizing: border-box;">
-      <p style="font-size: 1.5em; line-height: 1.8; max-width: 800px; text-align: center;">
-        First, we’re going to learn about tempo. <br>
- Tempo is how fast or slow the music goes. <br><br>
-Ready? <br>
- Listen to this song and pay attention to how the music changes to become faster when Melody rides the elevator to the second floor. 
-      </p>
-      <audio id="fastNarration" src="PT_FAST1_NARRATION.mp3"></audio>
-    </div>
-  `;
+    function playFastVideo() {
+      document.body.innerHTML = `
+        <video id="fastVideo" width="100%" height="100%" playsinline style="background:black;">
+          <source src="PT_FAST1.mp4" type="video/mp4" />
+        </video>
+      `;
+      const video = document.getElementById("fastVideo");
+      video.play();
+      video.onended = showSlowIntro;
+    }
 
-  const narration = document.getElementById("fastNarration");
-  narration.play().then(() => {
-    narration.onended = () => {
-      playFastVideo();
-    };
-  }).catch(err => {
-    console.warn("Autoplay issue:", err);
-    playFastVideo();
-  });
-}
+    function showSlowIntro() {
+      document.body.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:white;padding:40px;box-sizing:border-box;">
+          <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
+            Whoa! That was a fast ride!<br><br>
+            Let’s try one more.<br>
+            Now Melody is going to go super sloooow. Listen carefully!
+          </p>
+          <audio id="slowNarration" src="PT_SLOW1_NARRATION.mp3"></audio>
+        </div>
+      `;
 
-function playFastVideo() {
-  document.body.innerHTML = `
-    <video id="fastVideo" width="100%" height="100%" playsinline style="background:black;">
-      <source src="PT_FAST1.mp4" type="video/mp4">
-    </video>
-  `;
-  const video = document.getElementById("fastVideo");
-  video.play();
-  video.onended = () => {
-    showSlowIntro();
-  };
-}
+      const narration = document.getElementById("slowNarration");
+      narration.play().then(() => {
+        narration.onended = playSlowVideo;
+      }).catch(err => {
+        console.warn("Autoplay issue:", err);
+        playSlowVideo();
+      });
+    }
 
-function showSlowIntro() {
-  document.body.innerHTML = `
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: white; padding: 40px; box-sizing: border-box;">
-      <p style="font-size: 1.5em; line-height: 1.8; max-width: 800px; text-align: center;">
-       Whoa! That was a fast ride! <br> <br>
-Let’s try one more. <br>
-Now Melody is going to go super sloooow. Listen carefully!
-      </p>
-      <audio id="slowNarration" src="PT_SLOW1_NARRATION.mp3"></audio>
-    </div>
-  `;
-
-  const narration = document.getElementById("slowNarration");
-  narration.play().then(() => {
-    narration.onended = () => {
-      playSlowVideo();
-    };
-  }).catch(err => {
-    console.warn("Autoplay issue:", err);
-    playSlowVideo();
-  });
-}
-
-function playSlowVideo() {
-  document.body.innerHTML = `
-    <video id="slowVideo" width="100%" height="100%" playsinline style="background:black;">
-      <source src="PT_SLOW1.mp4" type="video/mp4">
-    </video>
-  `;
-  const video = document.getElementById("slowVideo");
-  video.play();
-  video.onended = () => {
-   showTempoInstructions();
-  };
-}
+    function playSlowVideo() {
+      document.body.innerHTML = `
+        <video id="slowVideo" width="100%" height="100%" playsinline style="background:black;">
+          <source src="PT_SLOW1.mp4" type="video/mp4" />
+        </video>
+      `;
+      const video = document.getElementById("slowVideo");
+      video.play();
+      video.onended = showTempoInstructions;
+    }
 
 function showTempoInstructions() {
   setTimeout(() => { // 1–2 sec pause before instructions screen
