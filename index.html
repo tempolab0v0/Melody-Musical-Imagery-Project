@@ -232,10 +232,10 @@ function showNarrationScreen() {
       console.warn("Audio play failed:", err);
     }
     audio.onended = () => {
-      showFastIntro(); // Replace with next function
-    };
-  });
-}
+    setTimeout(() => {
+        playFastVideo();
+    }, 1500); // Add 1.5 sec pause before next screen
+};
 
 function showFastIntro() {
   document.body.innerHTML = `
