@@ -101,7 +101,7 @@
           <button class="tempo-btn" data-choice="${correct}">${correct}</button>
           <button class="tempo-btn" data-choice="${correct==='fast'?'slow':'fast'}">${correct==='fast'?'slow':'fast'}</button>
           <div id="fb" style="margin-top:20px;font-size:1.2em;"></div>
-        ");
+        ');
         document.querySelectorAll('.tempo-btn').forEach(b=>b.onclick=()=>{
           const choice=b.getAttribute('data-choice');
           const fb=document.getElementById('fb');
@@ -180,6 +180,7 @@
   </script>
 </body>
 </html>
+
 
 
 
