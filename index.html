@@ -36,13 +36,16 @@
     }
 
     /* Hidden trial assets used by REAL trials */
-    .media-content{
-      width:100%; height:100%;
-      object-fit:cover;            /* <‑‑ was contain */
-      display:none;
-      position:absolute; top:0; left:0;
-    }
-
+.media-content,
+#visual-container video,
+#visual-container img{
+  width:100%;
+  height:100%;
+  object-fit:cover;     /* fills the area so you never see “half a video” again */
+  display:none;         /* media‑content starts hidden – JS will show what it needs */
+  position:absolute;
+  top:0;left:0;
+}
     /* Global rule so *any* video / img you inject later also scales correctly */
     #visual-container video,
     #visual-container img{
@@ -349,17 +352,22 @@ window.onload=async()=>{
   nextPractice();
 }
 
-function playTempoPracticeVideo(videoFile,correctAnswer,onComplete){
+  function playTempoPracticeVideo(videoFile, correctAnswer, onComplete){
   setTimeout(()=>{
     updateScreen(`
       <div style="position:relative;width:100%;height:100%;background:#cce0dd;">
-        <video id="tempoPracticeVideo" playsinline style="position:absolute;top:0;width:100%;height:100%;object-fit:cover;"></video>
-      </div>`,"#cce0dd");
+        <video id="tempoPracticeVideo" playsinline preload="auto"></video>
+      </div>`,"#cce0dd");          /* no black flash */
     const v=document.getElementById("tempoPracticeVideo");
     v.src=videoFile;
-    v.play();
-    v.onerror=()=>{console.warn("Video failed:",videoFile); onComplete();};   /* NEW */
-    v.onended=()=>setTimeout(()=>showTempoResponseScreen(correctAnswer,onComplete),1000);
+
+    /* make sure it fills the space – no inline object‑fit any more */
+    v.style.width  = "100%";
+    v.style.height = "100%";
+
+    v.play().catch(()=>{/* ignore autoplay errors */});
+    v.onerror = ()=>{ console.warn("Video failed:",videoFile); onComplete(); };
+    v.onended = ()=>setTimeout(()=>showTempoResponseScreen(correctAnswer,onComplete),1000);
   },1500);
 }
 
