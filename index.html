@@ -4,38 +4,26 @@
   <meta charset="UTF-8" />
   <title>Melody's Mystery Elevator</title>
   <style>
-    body{
-      margin:0;
-      text-align:center;
-      background:#fff;
-      font-family:Arial, sans-serif;
+    body {
+      margin: 0;
+      text-align: center;
+      background-color: white;
+      font-family: Arial, sans-serif;
     }
-
-    /* ——— CORE PLAY AREA ——— */
-    #visual-container{
-      width:90vw;
-      height:80vh;
-      max-width:1400px;
-      max-height:950px;
-      margin:80px auto 0;
-      background:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      box-shadow:0 2px 12px rgba(0,0,0,.07);
-      overflow:hidden;
-      position:relative;
+    #visual-container {
+      width: 90vw;
+      height: 80vh;
+      max-width: 1400px;
+      max-height: 950px;
+      margin: 80px auto 0 auto;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+      overflow: hidden;
+      position: relative;
     }
-
-    /* Dynamic overlay (every “screen” writes inside here) */
-    #screen{
-      position:absolute; inset:0;
-      display:flex; align-items:center; justify-content:center;
-      flex-direction:column;
-      background:transparent;
-    }
-
- /* Still‑images & videos used in the REAL trials */
     .media-content {
       width: 100%;
       height: 100%;
@@ -45,488 +33,111 @@
       top: 0;
       left: 0;
     }
-
-    /* Global rule so *any* video / img you inject later also scales correctly */
-    #visual-container video,
-    #visual-container img{
-      width:100%; height:100%;
-      object-fit:cover;            /* change to ‘contain’ if you prefer letter‑boxing */
+    #playButton {
+      margin: 32px auto 0 auto;
+      padding: 20px 48px;
+      font-size: 1.5em;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #f3e7ff, #d0b3ff);
+      color: #4b2e83;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(75, 46, 131, 0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-
-    /* Full‑screen click‑overlay */
-    #overlay{
-      position:fixed; inset:0;
-      background:#fff;
-      display:flex; flex-direction:column;
-      align-items:center; justify-content:center;
-      z-index:1000;
+    #playButton:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 18px rgba(75, 46, 131, 0.4);
     }
-
-    /* Buttons */
-    .btn-primary{
-      padding:20px 48px;
-      font-size:1.5em;
-      border-radius:12px; border:none;
-      background:linear-gradient(135deg,#f3e7ff,#d0b3ff);
-      color:#4b2e83; font-weight:bold;
-      cursor:pointer;
-      box-shadow:0 4px 12px rgba(75,46,131,.3);
-      transition:transform .2s, box-shadow .2s;
+    .elevator-option {
+      width: 300px;
+      margin: 20px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
     }
-    .btn-primary:hover{transform:scale(1.05); box-shadow:0 6px 18px rgba(75,46,131,.4);}
-
-    .tempo-btn,.elevator-option{cursor:pointer; transition:transform .2s;}
-    .tempo-btn:hover,.elevator-option:hover{transform:scale(1.05);}
+    .elevator-option:hover {
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
-  <!-- Full‑screen overlay (kept from original, hidden by default) -->
-  <div id="overlay" style="display:none;"></div>
-
-  <!-- Main visual area -->
   <div id="visual-container">
-    <div id="screen"></div>
-
-    <!-- Hidden trial assets (stillframes + videos) -->
-    <img  class="media-content" id="stillframe1"   src="stillframe1.png"/>
-    <img  class="media-content" id="gapStillframe" src="gapStillframe.png"/>
-    <img  class="media-content" id="stillframe2"   src="stillframe2.png"/>
-    <video class="media-content" id="video1"  src="video1.mp4"  playsinline preload="auto" muted></video>
-    <video class="media-content" id="gapVideo" src="gapVideo.mp4"playsinline preload="auto" muted></video>
-    <video class="media-content" id="video2"  src="video2.mp4"  playsinline preload="auto" muted></video>
+    <img class="media-content" id="stillframe1" src="stillframe1.png" />
+    <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
+    <img class="media-content" id="stillframe2" src="stillframe2.png" />
+    <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
+    <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
+    <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
   </div>
 
-  <!-- Global audio -->
   <audio id="myAudio" hidden preload="auto"></audio>
-  <audio id="narrationAudio" hidden preload="auto"></audio>
-  <audio id="introNarration" src="intro_narration.mp3" hidden preload="auto"></audio>
-
-  <!-- Sits outside #screen so it never gets wiped -->
   <div id="trialControls"></div>
 
   <script>
+    const TRIALS_PER_BLOCK = 2;
+    const BLOCK_ORDER = ["tempo", "pitch"];
+    const BLOCK_FILES = {
+      tempo: "tempo_trials.csv",
+      pitch: "pitch_trials.csv"
+    };
 
-    async function loadCSVData(blockType) {
-  const response = await fetch(BLOCK_FILES[blockType]);
-  const text = await response.text();
-  const lines = text.trim().split('\n').slice(1); // skip header
-  const parsed = lines.map(line => line.split(','));
-  blocks[blockType] = parsed;
-    }
-    /* --------------------------------------------------
-   HELPER – write every screen INSIDE #visual-container
---------------------------------------------------*/
-function updateScreen(html,background=null){
-  const s=document.getElementById("screen");
-  s.innerHTML=html;
-  s.style.background=background!==null?background:"transparent";
-}
+    let blocks = { tempo: [], pitch: [] };
+    let currentBlockIndex = 0;
+    let trialCounter = 1;
+    let participantID = null;
+    let sessionID = null;
+    let currentAudioFile = "";
+    let responseSubmitted = false;
+    let trialStartTime = null;
+    const visuals = [];
 
-/* --------------------------------------------------
-   GLOBAL CONSTANTS & STATE
---------------------------------------------------*/
-const TRIALS_PER_BLOCK=2;
-const BLOCK_ORDER=["tempo","pitch"];
-const BLOCK_FILES={tempo:"tempo_trials.csv",pitch:"pitch_trials.csv"};
-
-const PRACTICE_TRIALS={
-  tempo:[
-    {video:"PT_FAST1.mp4", narrationText:"This music is fast. The elevator sped up the song!", correct:"wonky", responseRequired:false},
-    {video:"PT_SLOW2.mp4", narrationText:"Did the music change?", correct:"wonky", responseRequired:true}
-  ],
-  pitch:[                                     /* <‑‑ updated list */
-    {video:"PT_HIGH2.mp4", narrationText:"This music sounds high‑pitched. The elevator changed the pitch!", correct:"wonky", responseRequired:false},
-    {video:"PT_SLOW2.mp4", narrationText:"Did the music change?", correct:"wonky", responseRequired:true}
-  ]
-};
-
-let blocks={tempo:[],pitch:[]};
-let currentBlockIndex=0;
-let trialCounter=1;
-let participantID=null;
-let sessionID=null;
-let currentAudioFile="";
-let responseSubmitted=false;
-let trialStartTime=null;
-const visuals=[];
-
-/* --------------------------------------------------
-   BOOTSTRAP
---------------------------------------------------*/
-window.onload=async()=>{
-  while(!participantID){participantID=prompt("Enter your Participant ID:"); if(participantID)participantID=participantID.trim();}
-  sessionID=`${participantID}_${new Date().toISOString()}`;
-  showIntroScreen();
-};
-
-    /* --------------------------------------------------
-       INTRO FLOW – every “screen” now uses updateScreen()
-    --------------------------------------------------*/
-    function showIntroScreen() {
-      updateScreen(`
-        <div style="display:flex;align-items:center;justify-content:center;height:100%;padding:40px;box-sizing:border-box;">
-          <div style="flex:1;display:flex;justify-content:center;">
-            <img src="Melody.png" alt="Melody character" style="max-height:80vh;max-width:90%;border-radius:20px;" />
-          </div>
-          <div style="flex:1;padding:30px;">
-            <p style="font-size:1.5em;line-height:1.6;">
-              Hi there!<br>
-              My name is Melody, and I love music!<br>
-              Every day, I ride an elevator to get to music class.<br>
-              But today, something strange is happening...
-            </p>
-            <button id="continueIntro" class="btn-primary" style="margin-top:30px;font-size:1em;">Click to Play</button>
-          </div>
-        </div>
-        <audio id="introAudio" src="intro_narration.mp3"></audio>
-      `);
-
-      const introAudio = document.getElementById("introAudio");
-      const continueBtn = document.getElementById("continueIntro");
-
-      continueBtn.addEventListener("click", async () => {
-        continueBtn.disabled = true;
-        try {
-          await introAudio.play();
-        } catch (err) {
-          console.warn("Autoplay blocked or failed:", err);
-        }
-        introAudio.onended = showIntroVideo;
-      });
-    }
-
-    function showIntroVideo() {
-      updateScreen(`
-        <div style="display:flex;justify-content:center;align-items:center;height:100%;background:black;">
-          <video id="introVideo" width="100%" height="100%" playsinline style="max-width:100%;max-height:100%;" muted>
-            <source src="intro_video.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          <audio id="introNarration2" src="intro_narration2.mp3"></audio>
-        </div>
-      `, "black");
-
-      const video = document.getElementById("introVideo");
-      const narration = document.getElementById("introNarration2");
-      const startPlayback = async () => {
-        try {
-          await Promise.all([video.play(), narration.play()]);
-        } catch (err) {
-          console.warn("Playback failed:", err);
-        }
-        video.onended = () => setTimeout(showNarrationScreen, 2000);
-      };
-
-      window.addEventListener("click", startPlayback, { once: true });
-    }
-
-    function showNarrationScreen() {
-      updateScreen(`
-        <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
-          <div style="flex:1;display:flex;justify-content:center;">
-            <img src="Melody.png" alt="Melody character" style="max-height:80vh;max-width:90%;border-radius:20px;" />
-          </div>
-          <div style="flex:1;text-align:center;padding:30px;">
-            <p style="font-size:1.3em;line-height:1.8;">
-              The magical elevator can do all sorts of silly things to the music!<br>
-              Sometimes it makes the music go faster or slower...<br>
-              Other times, the music sounds higher or lower than before!<br><br>
-              Let’s practice together so you know what to listen for!
-            </p>
-            <button id="playNarration" class="btn-primary" style="margin-top:20px;font-size:1em;">Click to Play</button>
-            <audio id="introNarration3" src="intro_narration3.mp3"></audio>
-          </div>
-        </div>
-      `);
-
-      const button = document.getElementById("playNarration");
-      const audio = document.getElementById("introNarration3");
-
-      button.addEventListener("click", async () => {
-        button.disabled = true;
-        try {
-          await audio.play();
-        } catch (err) {
-          console.warn("Audio play failed:", err);
-        }
-        audio.onended = () => setTimeout(showFastIntro, 1500);
-      });
-    }
-
-    /* --------------------------------------------------
-       TEMPO PRACTICE FLOW
-    --------------------------------------------------*/
-    function showFastIntro() {
-      updateScreen(`
-        <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
-          <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
-            First, we’re going to learn about tempo.<br>
-            Tempo is how fast or slow the music goes.<br><br>
-            Ready?<br>
-            Listen to this song and pay attention to how the music changes to become faster when Melody rides the elevator to the second floor.
-          </p>
-          <audio id="fastNarration" src="PT_FAST1_NARRATION.mp3"></audio>
-        </div>
-      `);
-
-      const narration = document.getElementById("fastNarration");
-      narration.play().then(() => {
-        narration.onended = playFastVideo;
-      }).catch(err => {
-        console.warn("Autoplay issue:", err);
-        playFastVideo();
-      });
-    }
-
-    function playFastVideo() {
-      updateScreen(`
-        <video id="fastVideo" width="100%" height="100%" playsinline style="background:black;">
-          <source src="PT_FAST1.mp4" type="video/mp4" />
-        </video>
-      `, "black");
-      const video = document.getElementById("fastVideo");
-      video.play();
-      video.onended = showSlowIntro;
-    }
-
-    function showSlowIntro() {
-      updateScreen(`
-        <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
-          <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
-            Whoa! That was a fast ride!<br><br>
-            Let’s try one more.<br>
-            Now Melody is going to go super sloooow. Listen carefully!
-          </p>
-          <audio id="slowNarration" src="PT_SLOW1_NARRATION.mp3"></audio>
-        </div>
-      `);
-
-      const narration = document.getElementById("slowNarration");
-      narration.play().then(() => {
-        narration.onended = playSlowVideo;
-      }).catch(err => {
-        console.warn("Autoplay issue:", err);
-        playSlowVideo();
-      });
-    }
-
-    function playSlowVideo() {
-      updateScreen(`
-        <video id="slowVideo" width="100%" height="100%" playsinline style="background:black;">
-          <source src="PT_SLOW1.mp4" type="video/mp4" />
-        </video>
-      `, "black");
-      const video = document.getElementById("slowVideo");
-      video.play();
-      video.onended = showTempoInstructions;
-    }
-
-    function showTempoInstructions() {
-      setTimeout(() => {
-        updateScreen(`
-          <div style="display: flex; justify-content: center; align-items: center; height: 100%; background: white; padding: 40px; box-sizing: border-box;">
-            <p style="font-size: 1.5em; line-height: 1.8; max-width: 800px; text-align: center;">
-              Great! Now let's practice even more.<br><br>
-              Listen carefully and tell me if the music is <strong>faster</strong>, <strong>slower</strong>, or <strong>the same</strong>!
-            </p>
-            <audio id="tempoInstructions" src="PT_TEMPO_INSTRUCTIONS.mp3"></audio>
-          </div>
-        `);
-
-        const audio = document.getElementById("tempoInstructions");
-        audio.play().then(() => {
-          audio.onended = () => {
-            setTimeout(() => {
-              runTempoPractice();
-            }, 1000);
-          };
-        }).catch(err => {
-          console.warn("Autoplay issue:", err);
-          runTempoPractice();
-        });
-      }, 1500);
-    }
-
-function runTempoPractice(){
-  const practiceTrials = [
-    { video: "PT_FAST2.mp4", correct: "fast" },
-    { video: "PT_SLOW2.mp4", correct: "slow" }
-  ];
-  let i = 0;
-
-  function nextPractice(){
-    if(i >= practiceTrials.length){
-      showRealTrialsIntro();
-      return;
-    }
-    const trial = practiceTrials[i++];
-    playTempoPracticeVideo(trial.video, trial.correct, nextPractice);
-  }
-
-  nextPractice();
-}
-
-function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
-  updateScreen(`
-    <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#cce0dd;">
-      <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:#cce0dd;">
-        <source src="${videoFile}" type="video/mp4">
-      </video>
-    </div>
-  `, "#cce0dd");
-
-  const video = document.getElementById("practiceVideo");
-
-  video.onended = () => {
-    showTempoResponseScreen(correctAnswer, callback);
-  };
-
-  // Handle autoplay restrictions or load failure
-  video.play().catch(err => {
-    console.warn("Autoplay issue or play failed:", err);
-    showTempoResponseScreen(correctAnswer, callback);
-  });
-}
-
-/* --------------------------------------------------
-   PRACTICE‑GENERIC for tempo & pitch
---------------------------------------------------*/
-function runPracticeTrials(blockType){
-  const tc=document.getElementById("trialControls");
-  let i=0;
-  function showNarrationScreenPractice(trial,nextStep){
-    tc.innerHTML=`<div style="padding:40px;font-size:1.4em;max-width:800px;margin:auto;">
-        <p>${trial.narrationText}</p>
-        <button id="continueButton" class="btn-primary" style="margin-top:20px;font-size:1em;">Continue</button>
-      </div>`;
-    document.getElementById("continueButton").addEventListener("click",()=>{
-      tc.innerHTML=""; nextStep();
-    });
-  }
-  function playNextPractice(){
-    if(i>=PRACTICE_TRIALS[blockType].length){rebuildBaseHTML(); updatePlayButton(); return;}
-    const trial=PRACTICE_TRIALS[blockType][i++];
-    showNarrationScreenPractice(trial,()=>{
-      updateScreen(`<video id="practiceVideo" playsinline preload="auto"></video>`);
-      const v=document.getElementById("practiceVideo");
-      v.src=trial.video;
-      v.play();
-      v.onerror=()=>{console.warn("Practice video failed:",trial.video); showPracticeChoice(trial.correct,playNextPractice);} /* NEW */
-      v.onended=()=>{
-        if(trial.responseRequired){
-          showPracticeChoice(trial.correct,playNextPractice);
-        }else{
-          tc.innerHTML=`<div style="font-size:1.3em;margin-top:20px;">That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.</div>`;
-          setTimeout(()=>{tc.innerHTML=""; playNextPractice();},4000);
-        }
-      };
-    });
-  }
-  playNextPractice();
-}
-
-    function showTempoResponseScreen(correctAnswer, callback) {
-  updateScreen(`
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #cce0dd; padding: 20px;">
-      <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
-      <div style="display: flex; gap: 40px; margin-top: 20px;">
-        <button class="tempo-btn" data-choice="fast" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Fast</button>
-        <button class="tempo-btn" data-choice="slow" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Slow</button>
-        <button class="tempo-btn" data-choice="same" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Same</button>
-      </div>
-      <audio id="correctSound" src="correct_feedback.mp3"></audio>
-      <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
-      <div id="feedback" style="margin-top: 20px; font-size: 1.2em; color: red;"></div>
-    </div>
-  `, "#cce0dd");
-
-  const buttons = document.querySelectorAll('.tempo-btn');
-  let answered = false; // 🔐 prevent multiple responses
-
-  buttons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (answered) return;
-      answered = true;
-      const choice = btn.getAttribute('data-choice');
-
-      // Disable all buttons to prevent more input
-      buttons.forEach(b => b.disabled = true);
-
-      if (choice === correctAnswer) {
-        document.getElementById("feedback").style.color = "green";
-        document.getElementById("feedback").innerHTML = "Correct!";
-        try {
-          const sound = document.getElementById("correctSound");
-          sound.play().catch(() => {});
-        } catch (e) {
-          console.warn("Correct sound failed:", e);
-        }
-        setTimeout(callback, 1500);
-      } else {
-        document.getElementById("feedback").style.color = "red";
-        document.getElementById("feedback").innerHTML = "Oops! Try again.";
-        try {
-          const wrongSound = document.getElementById("wrongSound");
-          wrongSound.play().catch(() => {});
-        } catch (e) {
-          console.warn("Wrong sound failed:", e);
-        }
-        // Allow retry after 2 seconds
-        setTimeout(() => {
-          answered = false;
-          buttons.forEach(b => b.disabled = false);
-        }, 2000);
+    window.onload = async () => {
+      while (!participantID) {
+        participantID = prompt("Enter your Participant ID:");
+        if (participantID) participantID = participantID.trim();
       }
-    });
-  });
-}
+      sessionID = `${participantID}_${new Date().toISOString()}`;
 
-    function showRealTrialsIntro() {
-      setTimeout(() => {
-        updateScreen(`
-          <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; background: #cce0dd;">
-            <h1 style="margin-top: 30px; color: #4b2e83;">Awesome! Now you're ready for the real trials!</h1>
-            <button id="startRealTrials" class="btn-primary" style="margin-top: 20px; font-size: 1.2em;">Start</button>
-          </div>
-        `, "#cce0dd");
+      for (const block of BLOCK_ORDER) {
+        try {
+          const response = await fetch(BLOCK_FILES[block]);
+          const text = await response.text();
+          const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
+          shuffleArray(rows);
+          blocks[block] = rows.slice(0, TRIALS_PER_BLOCK);
+        } catch (err) {
+          alert(`Failed to load ${block} block: ` + err.message);
+          return;
+        }
+      }
 
-        document.getElementById("startRealTrials").addEventListener("click", () => {
-          startRealTrials();
-        });
-      }, 1500);
-    }
-
-async function startRealTrials() {
-  try {
-    await loadCSVData("tempo");
-    console.log("✅ tempo trials loaded:", blocks.tempo);
-  } catch(err) {
-    console.error("❌ failed to load tempo CSV:", err);
-  }
-  rebuildBaseHTML();
-  updatePlayButton();
-}
-
-    /* --------------------------------------------------
-       REAL TRIALS  (unchanged logic, but no more document.body manipulation)
-    --------------------------------------------------*/
+      setupVisualElements();
+      updatePlayButton();
+    };
 
     function setupVisualElements() {
+      const still1 = document.getElementById("stillframe1");
+      const still2 = document.getElementById("stillframe2");
+      const gapStill = document.getElementById("gapStillframe");
+      const v1 = document.getElementById("video1");
+      const vGap = document.getElementById("gapVideo");
+      const v2 = document.getElementById("video2");
       visuals.length = 0;
       visuals.push(
-        { el: document.getElementById("stillframe1"), start: 0, end: 0 },
-        { el: document.getElementById("video1"), start: 0, end: 0 },
-        { el: document.getElementById("gapStillframe"), start: 0, end: 0 },
-        { el: document.getElementById("gapVideo"), start: 0, end: 0 },
-        { el: document.getElementById("video2"), start: 0, end: 0 },
-        { el: document.getElementById("stillframe2"), start: 0, end: 0 }
+        { el: still1, start: 0, end: 0 },
+        { el: v1, start: 0, end: 0 },
+        { el: gapStill, start: 0, end: 0 },
+        { el: vGap, start: 0, end: 0 },
+        { el: v2, start: 0, end: 0 },
+        { el: still2, start: 0, end: 0 }
       );
     }
 
     function updatePlayButton() {
       const block = BLOCK_ORDER[currentBlockIndex];
       const trialControls = document.getElementById("trialControls");
-      trialControls.innerHTML = `<button id="playButton" class="btn-primary">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
+      trialControls.innerHTML = `<button id="playButton">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
       document.getElementById("playButton").addEventListener("click", playTrial);
     }
 
@@ -542,17 +153,10 @@ async function startRealTrials() {
 
     async function playTrial() {
       document.getElementById("trialControls").innerHTML = "";
-      updateScreen(""); // clear overlay so only video assets play
       hideAll();
 
       const block = BLOCK_ORDER[currentBlockIndex];
       const trial = blocks[block][trialCounter - 1];
-
-      if (!trial) {
-    console.error(`⚠️ No trial found for ${block}, trial #${trialCounter}`);
-    updateScreen(`<h2>Error: No trial data found. Please check your CSV and block setup.</h2>`);
-    return;
-  }
       const [filename, original, gap, test] = trial;
 
       const originalSec = parseFloat(original);
@@ -621,8 +225,8 @@ async function startRealTrials() {
     }
 
     function showResponseOptions() {
-      updateScreen(`
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px;">
+      document.body.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px;">
           <h1 style="color: #4b2e83;">Which elevator did Melody ride?</h1>
           <p style="max-width: 600px; font-size: 1.1em; margin-bottom: 30px;">
             Now that the music is over, think back to how it sounded before and after the pause.<br><br>
@@ -631,15 +235,15 @@ async function startRealTrials() {
           </p>
           <div style="display: flex; justify-content: center; gap: 80px;">
             <div style="text-align: center;">
-              <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator" style="width:300px;">
+              <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator">
               <div style="margin-top: 12px; font-weight: bold;">Normal Elevator</div>
             </div>
             <div style="text-align: center;">
-              <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator" style="width:300px;">
+              <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator">
               <div style="margin-top: 12px; font-weight: bold;">Wonky Elevator</div>
             </div>
           </div>
-        </div>`);
+        </div>`;
 
       document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
       document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"), { once: true });
@@ -674,6 +278,7 @@ async function startRealTrials() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(entry)
       })
+      .then(res => res.json())
       .then(() => {
         trialCounter++;
         if (trialCounter > TRIALS_PER_BLOCK) {
@@ -681,10 +286,9 @@ async function startRealTrials() {
           currentBlockIndex++;
         }
         if (currentBlockIndex >= BLOCK_ORDER.length) {
-          updateScreen(`<h1>Thank you for participating! All trials complete.</h1>`);
+          document.body.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><h1>Thank you for participating! All trials complete.</h1></div>`;
         } else {
           rebuildBaseHTML();
-          runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
         }
       })
       .catch(err => {
@@ -695,95 +299,32 @@ async function startRealTrials() {
     }
 
     function rebuildBaseHTML() {
-      updateScreen(""); // clear overlay
-      document.getElementById("trialControls").innerHTML = "";
+      document.body.innerHTML = `
+        <div id="visual-container">
+          <img class="media-content" id="stillframe1" src="stillframe1.png" />
+          <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
+          <img class="media-content" id="stillframe2" src="stillframe2.png" />
+          <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
+          <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
+          <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
+        </div>
+        <audio id="myAudio" hidden preload="auto"></audio>
+        <div id="trialControls"></div>`;
       responseSubmitted = false;
       setupVisualElements();
+      updatePlayButton();
     }
 
-    /* --------------------------------------------------
-       PRACTICE TRIALS HELPERS (unchanged, but updateScreen in place of body changes)
-    --------------------------------------------------*/
     function shuffleArray(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
       }
     }
-
-      function playNextPractice() {
-        if (i >= PRACTICE_TRIALS[blockType].length) {
-          rebuildBaseHTML();
-          updatePlayButton();
-          return;
-        }
-
-        const trial = PRACTICE_TRIALS[blockType][i];
-        i++;
-
-        showNarrationScreenPractice(trial, () => {
-          updateScreen(`<video id="practiceVideo" class="media-content" playsinline preload="auto" style="display: block; width: 100%; height: 100%;"></video>`);
-          const video = document.getElementById("practiceVideo");
-          video.src = trial.video;
-          video.play();
-
-          video.onended = () => {
-            if (trial.responseRequired) {
-              showPracticeChoice(trial.correct, playNextPractice);
-            } else {
-              trialControls.innerHTML = `<div style="font-size: 1.3em; margin-top: 20px;">That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.</div>`;
-              setTimeout(() => {
-                trialControls.innerHTML = "";
-                playNextPractice();
-              }, 4000);
-            }
-          };
-        });
-      }
-
-    function showPracticeChoice(correctAnswer, onComplete) {
-      document.getElementById("trialControls").innerHTML = `
-        <h2>Which elevator did Melody ride?</h2>
-        <div style="display: flex; justify-content: center; gap: 60px; margin-top: 20px;">
-          <div>
-            <img src="normal.jpg" class="elevator-option" id="normalElevatorPractice" alt="Normal Elevator" style="width:300px;">
-            <div style="text-align: center; margin-top: 10px;">Normal</div>
-          </div>
-          <div>
-            <img src="wonky.png" class="elevator-option" id="wonkyElevatorPractice" alt="Wonky Elevator" style="width:300px;">
-            <div style="text-align: center; margin-top: 10px;">Wonky</div>
-          </div>
-        </div>
-        <div id="practiceFeedback" style="margin-top: 30px; font-size: 1.2em;"></div>
-      `;
-
-      document.getElementById("normalElevatorPractice").addEventListener("click", () => {
-        showPracticeFeedback("normal" === correctAnswer, onComplete);
-      }, { once: true });
-
-      document.getElementById("wonkyElevatorPractice").addEventListener("click", () => {
-        showPracticeFeedback("wonky" === correctAnswer, onComplete);
-      }, { once: true });
-    }
-
-    function showPracticeFeedback(isCorrect, onComplete) {
-      const fb = document.getElementById("practiceFeedback");
-      fb.innerHTML = isCorrect
-        ? "<span style='color: green;'>Correct!</span> Great job!"
-        : "<span style='color: red;'>Oops!</span> That was actually the <strong>" + (isCorrect ? "normal" : "wonky") + "</strong> elevator.";
-      setTimeout(() => {
-        document.getElementById("trialControls").innerHTML = "";
-        onComplete();
-      }, 3000);
-    }
-
-    /* --------------------------------------------------
-       INITIALISE HIDDEN TRIAL ASSETS
-    --------------------------------------------------*/
-    setupVisualElements();
   </script>
 </body>
 </html>
+
 
 
 
