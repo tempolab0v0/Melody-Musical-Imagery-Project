@@ -416,39 +416,63 @@ function runPracticeTrials(blockType){
   }
   playNextPractice();
 }
-    function showTempoResponseScreen(correctAnswer, callback) {
-      updateScreen(`
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #cce0dd; padding: 20px;">
-          <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
-          <div style="display: flex; gap: 40px; margin-top: 20px;">
-            <button class="tempo-btn" data-choice="fast" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Fast</button>
-            <button class="tempo-btn" data-choice="slow" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Slow</button>
-            <button class="tempo-btn" data-choice="same" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Same</button>
-          </div>
-          <audio id="correctSound" src="correct_feedback.mp3"></audio>
-          <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
-          <div id="feedback" style="margin-top: 20px; font-size: 1.2em; color: red;"></div>
-        </div>
-      `, "#cce0dd");
 
-      const buttons = document.querySelectorAll('.tempo-btn');
-      buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          const choice = btn.getAttribute('data-choice');
-          if (choice === correctAnswer) {
-            document.getElementById("feedback").style.color = "green";
-            document.getElementById("feedback").innerHTML = "Correct!";
-            document.getElementById("correctSound").play().then(() => {
-              setTimeout(callback, 1500);
-            });
-          } else {
-            document.getElementById("feedback").style.color = "red";
-            document.getElementById("feedback").innerHTML = "Oops! Try again.";
-            document.getElementById("wrongSound").play();
-          }
-        });
-      });
-    }
+    function showTempoResponseScreen(correctAnswer, callback) {
+  updateScreen(`
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #cce0dd; padding: 20px;">
+      <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
+      <div style="display: flex; gap: 40px; margin-top: 20px;">
+        <button class="tempo-btn" data-choice="fast" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Fast</button>
+        <button class="tempo-btn" data-choice="slow" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Slow</button>
+        <button class="tempo-btn" data-choice="same" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Same</button>
+      </div>
+      <audio id="correctSound" src="correct_feedback.mp3"></audio>
+      <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
+      <div id="feedback" style="margin-top: 20px; font-size: 1.2em; color: red;"></div>
+    </div>
+  `, "#cce0dd");
+
+  const buttons = document.querySelectorAll('.tempo-btn');
+  let answered = false; // 🔐 prevent multiple responses
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (answered) return;
+      answered = true;
+      const choice = btn.getAttribute('data-choice');
+
+      // Disable all buttons to prevent more input
+      buttons.forEach(b => b.disabled = true);
+
+      if (choice === correctAnswer) {
+        document.getElementById("feedback").style.color = "green";
+        document.getElementById("feedback").innerHTML = "Correct!";
+        try {
+          const sound = document.getElementById("correctSound");
+          sound.play().catch(() => {});
+        } catch (e) {
+          console.warn("Correct sound failed:", e);
+        }
+        setTimeout(callback, 1500);
+      } else {
+        document.getElementById("feedback").style.color = "red";
+        document.getElementById("feedback").innerHTML = "Oops! Try again.";
+        try {
+          const wrongSound = document.getElementById("wrongSound");
+          wrongSound.play().catch(() => {});
+        } catch (e) {
+          console.warn("Wrong sound failed:", e);
+        }
+        // Allow retry after 2 seconds
+        setTimeout(() => {
+          answered = false;
+          buttons.forEach(b => b.disabled = false);
+        }, 2000);
+      }
+    });
+  });
+}
+
 
     function showRealTrialsIntro() {
       setTimeout(() => {
