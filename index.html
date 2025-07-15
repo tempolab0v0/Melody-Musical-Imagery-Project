@@ -290,34 +290,30 @@
       });
     }
 
-    function playFastVideo() {
-      updateScreen(`
-  <div style="display:flex; 
-              align-items:center; 
-              justify-content:center; 
-              height:100%; 
-              background:#cce0dd;">
-    <video id="practiceVideo" playsinline preload="auto"
-           style="max-width:100%; max-height:100%; object-fit:contain;">
-      <source src="${trial.video}" type="video/mp4" />
-      Your browser doesn’t support video.
-    </video>
-  </div>
-`);
-const video = document.getElementById("practiceVideo");
-video.play();
-video.onended = () => {
-  if (trial.responseRequired) {
-    showPracticeChoice(trial.correct, nextPractice);
-  } else {
-    trialControls.innerHTML = `
-      <div style="font-size:1.3em; margin-top:20px;">
-        That was the <strong>${trial.correct}</strong> elevator!<br><br>
-        Let’s try one yourself next.
-      </div>`;
-    setTimeout(nextPractice, 4000);
-  }
-};
+function playFastVideo() {
+  updateScreen(`
+    <div style="display:flex;
+                align-items:center;
+                justify-content:center;
+                height:100%;
+                background:black;">
+      <video id="fastVideo"
+             width="100%"
+             height="100%"
+             playsinline
+             muted
+             style="max-width:100%; max-height:100%; object-fit:contain;">
+        <source src="PT_FAST1.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  `, "black");
+
+  const video = document.getElementById("fastVideo");
+  video.play().catch(() => {});
+  video.onended = showSlowIntro;
+}
+
 
     function showSlowIntro() {
       updateScreen(`
