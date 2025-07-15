@@ -473,7 +473,6 @@ function runPracticeTrials(blockType){
   });
 }
 
-
     function showRealTrialsIntro() {
       setTimeout(() => {
         updateScreen(`
@@ -489,6 +488,10 @@ function runPracticeTrials(blockType){
       }, 1500);
     }
 
+    function startRealTrials() {
+  rebuildBaseHTML();      // sets up hidden videos/images and resets state
+  updatePlayButton();     // adds the Start Trial 1 of 2 button
+}
     /* --------------------------------------------------
        REAL TRIALS  (unchanged logic, but no more document.body manipulation)
     --------------------------------------------------*/
