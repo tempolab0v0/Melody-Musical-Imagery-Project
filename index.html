@@ -167,7 +167,7 @@
         participantID = prompt("Enter your Participant ID:");
         if (participantID) participantID = participantID.trim();
       }
-      sessionID = ${participantID}_${new Date().toISOString()};
+sessionID = `${participantID}_${new Date().toISOString()}`;
       showIntroScreen();
     };
 
