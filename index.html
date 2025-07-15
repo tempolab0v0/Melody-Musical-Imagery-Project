@@ -340,11 +340,11 @@ window.onload=async()=>{
     }
 
 function runTempoPractice(){
-  const practiceTrials=[
-    {video:"PT_FAST2.mp4",correct:"fast"},
-    {video:"PT_SLOW2.mp4",correct:"slow"}
+  const practiceTrials = [
+    { video: "PT_FAST2.mp4", correct: "fast" },
+    { video: "PT_SLOW2.mp4", correct: "slow" }
   ];
-  let i=0;
+  let i = 0;
 
   function nextPractice(){
     if(i >= practiceTrials.length){
@@ -379,59 +379,6 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
     showTempoResponseScreen(correctAnswer, callback);
   });
 }
-
-
-function showTempoResponseScreen(correctAnswer, callback) {
-  const container = document.getElementById("visual-container");
-
-  // overlay the response UI on top
-  const overlay = document.createElement("div");
-  overlay.style.cssText = `
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255,255,255,0.8);
-  `;
-  overlay.innerHTML = `
-    <h1 style="color:#4b2e83;">How did the music sound?</h1>
-    <div style="display:flex; gap:40px; margin-top:20px;">
-      <button data-choice="fast" class="tempo-btn" style="padding:14px 28px; font-size:1.2em;">Fast</button>
-      <button data-choice="slow" class="tempo-btn" style="padding:14px 28px; font-size:1.2em;">Slow</button>
-      <button data-choice="same" class="tempo-btn" style="padding:14px 28px; font-size:1.2em;">Same</button>
-    </div>
-    <div id="feedback" style="margin-top:20px; font-size:1.2em;"></div>
-    <audio id="correctSound" src="correct_feedback.mp3"></audio>
-    <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
-  `;
-
-  container.appendChild(overlay);
-  const feedbackEl = overlay.querySelector("#feedback");
-  const playCorrect = () => overlay.querySelector("#correctSound").play();
-  const playWrong   = () => overlay.querySelector("#wrongSound").play();
-
-  overlay.querySelectorAll(".tempo-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const choice = btn.getAttribute("data-choice");
-      if (choice === correctAnswer) {
-        feedbackEl.style.color = "green";
-        feedbackEl.textContent = "Correct!";
-        playCorrect();
-        setTimeout(() => {
-          overlay.remove();
-          callback();
-        }, 1500);
-      } else {
-        feedbackEl.style.color = "red";
-        feedbackEl.textContent = "Oops! Try again.";
-        playWrong();
-      }
-    }, { once: false });
-  });
-}
-
 
 /* --------------------------------------------------
    PRACTICE‑GENERIC for tempo & pitch
