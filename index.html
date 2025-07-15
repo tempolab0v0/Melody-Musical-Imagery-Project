@@ -4,90 +4,76 @@
   <meta charset="UTF-8" />
   <title>Melody's Mystery Elevator</title>
   <style>
-    body {
-      margin: 0;
-      text-align: center;
-      background-color: white;
-      font-family: Arial, sans-serif;
+    body{
+      margin:0;
+      text-align:center;
+      background:#fff;
+      font-family:Arial, sans-serif;
     }
 
     /* ——— CORE PLAY AREA ——— */
-    #visual-container {
-      width: 90vw;
-      height: 80vh;
-      max-width: 1400px;
-      max-height: 950px;
-      margin: 80px auto 0 auto;
-      background-color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
-      overflow: hidden;
-      position: relative; /* anchor for #screen overlay */
+    #visual-container{
+      width:90vw;
+      height:80vh;
+      max-width:1400px;
+      max-height:950px;
+      margin:80px auto 0;
+      background:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 2px 12px rgba(0,0,0,.07);
+      overflow:hidden;
+      position:relative;
     }
 
-    /* Dynamic overlay that every “screen” is written into */
-    #screen {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      background: transparent;
+    /* Dynamic overlay (every “screen” writes inside here) */
+    #screen{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      flex-direction:column;
+      background:transparent;
     }
 
-    /* Still‑images & videos used in the REAL trials */
-    .media-content {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: none;
-      position: absolute;
-      top: 0;
-      left: 0;
+    /* Hidden trial assets used by REAL trials */
+    .media-content{
+      width:100%; height:100%;
+      object-fit:cover;            /* <‑‑ was contain */
+      display:none;
+      position:absolute; top:0; left:0;
     }
 
-    /* Overlay that sits on TOP of everything (click‑to‑start, etc.) */
-    #overlay {
-      position: fixed;
-      inset: 0;
-      background: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
+    /* Global rule so *any* video / img you inject later also scales correctly */
+    #visual-container video,
+    #visual-container img{
+      width:100%; height:100%;
+      object-fit:cover;            /* change to ‘contain’ if you prefer letter‑boxing */
     }
 
-    /* Re‑usable UI bits */
-    .btn-primary {
-      padding: 20px 48px;
-      font-size: 1.5em;
-      border-radius: 12px;
-      border: none;
-      background: linear-gradient(135deg, #f3e7ff, #d0b3ff);
-      color: #4b2e83;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(75, 46, 131, 0.3);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .btn-primary:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 18px rgba(75, 46, 131, 0.4);
+    /* Full‑screen click‑overlay */
+    #overlay{
+      position:fixed; inset:0;
+      background:#fff;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      z-index:1000;
     }
 
-    .tempo-btn,
-    .elevator-option {
-      cursor: pointer;
-      transition: transform 0.2s ease;
+    /* Buttons */
+    .btn-primary{
+      padding:20px 48px;
+      font-size:1.5em;
+      border-radius:12px; border:none;
+      background:linear-gradient(135deg,#f3e7ff,#d0b3ff);
+      color:#4b2e83; font-weight:bold;
+      cursor:pointer;
+      box-shadow:0 4px 12px rgba(75,46,131,.3);
+      transition:transform .2s, box-shadow .2s;
     }
-    .tempo-btn:hover,
-    .elevator-option:hover {
-      transform: scale(1.05);
-    }
+    .btn-primary:hover{transform:scale(1.05); box-shadow:0 6px 18px rgba(75,46,131,.4);}
+
+    .tempo-btn,.elevator-option{cursor:pointer; transition:transform .2s;}
+    .tempo-btn:hover,.elevator-option:hover{transform:scale(1.05);}
   </style>
 </head>
 <body>
@@ -99,74 +85,68 @@
     <div id="screen"></div>
 
     <!-- Hidden trial assets (stillframes + videos) -->
-    <img class="media-content" id="stillframe1" src="stillframe1.png" />
-    <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
-    <img class="media-content" id="stillframe2" src="stillframe2.png" />
-    <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
-    <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
-    <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
+    <img  class="media-content" id="stillframe1"   src="stillframe1.png"/>
+    <img  class="media-content" id="gapStillframe" src="gapStillframe.png"/>
+    <img  class="media-content" id="stillframe2"   src="stillframe2.png"/>
+    <video class="media-content" id="video1"  src="video1.mp4"  playsinline preload="auto" muted></video>
+    <video class="media-content" id="gapVideo" src="gapVideo.mp4"playsinline preload="auto" muted></video>
+    <video class="media-content" id="video2"  src="video2.mp4"  playsinline preload="auto" muted></video>
   </div>
 
-  <!-- Global audio elements -->
+  <!-- Global audio -->
   <audio id="myAudio" hidden preload="auto"></audio>
   <audio id="narrationAudio" hidden preload="auto"></audio>
   <audio id="introNarration" src="intro_narration.mp3" hidden preload="auto"></audio>
 
-  <!-- A lightweight container for buttons that MUST sit outside the #screen overlay so it never gets wiped -->
+  <!-- Sits outside #screen so it never gets wiped -->
   <div id="trialControls"></div>
 
   <script>
-    /* --------------------------------------------------
-       HELPER – write every screen INSIDE #visual-container
-    --------------------------------------------------*/
-    function updateScreen(html, background = null) {
-      const screen = document.getElementById("screen");
-      screen.innerHTML = html;
-      screen.style.background = background !== null ? background : "transparent";
-    }
+/* --------------------------------------------------
+   HELPER – write every screen INSIDE #visual-container
+--------------------------------------------------*/
+function updateScreen(html,background=null){
+  const s=document.getElementById("screen");
+  s.innerHTML=html;
+  s.style.background=background!==null?background:"transparent";
+}
 
-    /* --------------------------------------------------
-       GLOBAL CONSTANTS & STATE (unchanged)
-    --------------------------------------------------*/
-    const TRIALS_PER_BLOCK = 2;
-    const BLOCK_ORDER = ["tempo", "pitch"];
-    const BLOCK_FILES = {
-      tempo: "tempo_trials.csv",
-      pitch: "pitch_trials.csv"
-    };
+/* --------------------------------------------------
+   GLOBAL CONSTANTS & STATE
+--------------------------------------------------*/
+const TRIALS_PER_BLOCK=2;
+const BLOCK_ORDER=["tempo","pitch"];
+const BLOCK_FILES={tempo:"tempo_trials.csv",pitch:"pitch_trials.csv"};
 
-    const PRACTICE_TRIALS = {
-      tempo: [
-        { video: "PT_FAST1.mp4", narrationText: "This music is fast. The elevator sped up the song!", correct: "wonky", responseRequired: false },
-        { video: "PT_SLOW2.mp4", narrationText: "Did the music change?", correct: "wonky", responseRequired: true }
-      ],
-      pitch: [
-        { video: "PT_HIGH1.mp4", narrationText: "This music sounds high‑pitched. The elevator changed the pitch!", correct: "wonky", responseRequired: false },
-        { video: "PT_LOW2.mp4", narrationText: "Did the music change?", correct: "wonky", responseRequired: true }
-      ]
-    };
+const PRACTICE_TRIALS={
+  tempo:[
+    {video:"PT_FAST1.mp4", narrationText:"This music is fast. The elevator sped up the song!", correct:"wonky", responseRequired:false},
+    {video:"PT_SLOW2.mp4", narrationText:"Did the music change?", correct:"wonky", responseRequired:true}
+  ],
+  pitch:[                                     /* <‑‑ updated list */
+    {video:"PT_HIGH2.mp4", narrationText:"This music sounds high‑pitched. The elevator changed the pitch!", correct:"wonky", responseRequired:false},
+    {video:"PT_SLOW2.mp4", narrationText:"Did the music change?", correct:"wonky", responseRequired:true}
+  ]
+};
 
-    let blocks = { tempo: [], pitch: [] };
-    let currentBlockIndex = 0;
-    let trialCounter = 1;
-    let participantID = null;
-    let sessionID = null;
-    let currentAudioFile = "";
-    let responseSubmitted = false;
-    let trialStartTime = null;
-    const visuals = [];
+let blocks={tempo:[],pitch:[]};
+let currentBlockIndex=0;
+let trialCounter=1;
+let participantID=null;
+let sessionID=null;
+let currentAudioFile="";
+let responseSubmitted=false;
+let trialStartTime=null;
+const visuals=[];
 
-    /* --------------------------------------------------
-       BOOTSTRAP
-    --------------------------------------------------*/
-    window.onload = async () => {
-      while (!participantID) {
-        participantID = prompt("Enter your Participant ID:");
-        if (participantID) participantID = participantID.trim();
-      }
-      sessionID = `${participantID}_${new Date().toISOString()}`;
-      showIntroScreen();
-    };
+/* --------------------------------------------------
+   BOOTSTRAP
+--------------------------------------------------*/
+window.onload=async()=>{
+  while(!participantID){participantID=prompt("Enter your Participant ID:"); if(participantID)participantID=participantID.trim();}
+  sessionID=`${participantID}_${new Date().toISOString()}`;
+  showIntroScreen();
+};
 
     /* --------------------------------------------------
        INTRO FLOW – every “screen” now uses updateScreen()
@@ -356,49 +336,69 @@
       }, 1500);
     }
 
-    function runTempoPractice() {
-      const practiceTrials = [
-        { video: "PT_FAST2.mp4", correct: "fast" },
-        { video: "PT_SLOW2.mp4", correct: "slow" }
-      ];
+  function runTempoPractice(){
+  const practiceTrials=[
+    {video:"PT_FAST2.mp4",correct:"fast"},
+    {video:"PT_SLOW2.mp4",correct:"slow"}
+  ];
+  let i=0;
+  function nextPractice(){
+    if(i>=practiceTrials.length){showRealTrialsIntro();return;}
+    const trial=practiceTrials[i++]; playTempoPracticeVideo(trial.video,trial.correct,nextPractice);
+  }
+  nextPractice();
+}
 
-      let i = 0;
+function playTempoPracticeVideo(videoFile,correctAnswer,onComplete){
+  setTimeout(()=>{
+    updateScreen(`
+      <div style="position:relative;width:100%;height:100%;background:#cce0dd;">
+        <video id="tempoPracticeVideo" playsinline style="position:absolute;top:0;width:100%;height:100%;object-fit:cover;"></video>
+      </div>`,"#cce0dd");
+    const v=document.getElementById("tempoPracticeVideo");
+    v.src=videoFile;
+    v.play();
+    v.onerror=()=>{console.warn("Video failed:",videoFile); onComplete();};   /* NEW */
+    v.onended=()=>setTimeout(()=>showTempoResponseScreen(correctAnswer,onComplete),1000);
+  },1500);
+}
 
-      function nextPractice() {
-        if (i >= practiceTrials.length) {
-          showRealTrialsIntro();
-          return;
+/* --------------------------------------------------
+   PRACTICE‑GENERIC for tempo & pitch
+--------------------------------------------------*/
+function runPracticeTrials(blockType){
+  const tc=document.getElementById("trialControls");
+  let i=0;
+  function showNarrationScreenPractice(trial,nextStep){
+    tc.innerHTML=`<div style="padding:40px;font-size:1.4em;max-width:800px;margin:auto;">
+        <p>${trial.narrationText}</p>
+        <button id="continueButton" class="btn-primary" style="margin-top:20px;font-size:1em;">Continue</button>
+      </div>`;
+    document.getElementById("continueButton").addEventListener("click",()=>{
+      tc.innerHTML=""; nextStep();
+    });
+  }
+  function playNextPractice(){
+    if(i>=PRACTICE_TRIALS[blockType].length){rebuildBaseHTML(); updatePlayButton(); return;}
+    const trial=PRACTICE_TRIALS[blockType][i++];
+    showNarrationScreenPractice(trial,()=>{
+      updateScreen(`<video id="practiceVideo" playsinline preload="auto"></video>`);
+      const v=document.getElementById("practiceVideo");
+      v.src=trial.video;
+      v.play();
+      v.onerror=()=>{console.warn("Practice video failed:",trial.video); showPracticeChoice(trial.correct,playNextPractice);} /* NEW */
+      v.onended=()=>{
+        if(trial.responseRequired){
+          showPracticeChoice(trial.correct,playNextPractice);
+        }else{
+          tc.innerHTML=`<div style="font-size:1.3em;margin-top:20px;">That was the <strong>${trial.correct}</strong> elevator!<br><br>Let's try one yourself next.</div>`;
+          setTimeout(()=>{tc.innerHTML=""; playNextPractice();},4000);
         }
-
-        const trial = practiceTrials[i];
-        i++;
-        playTempoPracticeVideo(trial.video, trial.correct, nextPractice);
-      }
-
-      nextPractice();
-    }
-
-    function playTempoPracticeVideo(videoFile, correctAnswer, onComplete) {
-      setTimeout(() => {
-        updateScreen(`
-          <div style="position: relative; width: 100%; height: 100%; background: #cce0dd;">
-            <video id="tempoPracticeVideo" style="position: absolute; top: 0; width: 100%; height: 100%; object-fit: contain;" playsinline>
-              <source src="${videoFile}" type="video/mp4">
-            </video>
-          </div>
-        `, "#cce0dd");
-
-        const video = document.getElementById("tempoPracticeVideo");
-        video.play();
-
-        video.onended = () => {
-          setTimeout(() => {
-            showTempoResponseScreen(correctAnswer, onComplete);
-          }, 1000);
-        };
-      }, 1500);
-    }
-
+      };
+    });
+  }
+  playNextPractice();
+}
     function showTempoResponseScreen(correctAnswer, callback) {
       updateScreen(`
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #cce0dd; padding: 20px;">
