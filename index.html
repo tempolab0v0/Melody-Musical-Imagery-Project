@@ -35,17 +35,16 @@
       background:transparent;
     }
 
-    /* Hidden trial assets used by REAL trials */
 .media-content,
-#visual-container video,
-#visual-container img{
+#visual-container video{
   width:100%;
   height:100%;
-  object-fit:cover;     /* fills the area so you never see “half a video” again */
-  display:none;         /* media‑content starts hidden – JS will show what it needs */
+  object-fit:cover;
+  display:none;
   position:absolute;
   top:0;left:0;
 }
+
     /* Global rule so *any* video / img you inject later also scales correctly */
     #visual-container video,
     #visual-container img{
