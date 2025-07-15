@@ -547,6 +547,12 @@ async function startRealTrials() {
 
       const block = BLOCK_ORDER[currentBlockIndex];
       const trial = blocks[block][trialCounter - 1];
+
+      if (!trial) {
+    console.error(`⚠️ No trial found for ${block}, trial #${trialCounter}`);
+    updateScreen(`<h2>Error: No trial data found. Please check your CSV and block setup.</h2>`);
+    return;
+  }
       const [filename, original, gap, test] = trial;
 
       const originalSec = parseFloat(original);
