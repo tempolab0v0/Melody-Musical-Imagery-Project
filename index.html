@@ -96,25 +96,33 @@ let responseSubmitted=false;
 let trialStartTime=null;
 const visuals=[];
 
-window.onload=async()=>{
-  while(!participantID){participantID=prompt("Enter your Participant ID:"); if(participantID)participantID=participantID.trim();}
-  sessionID=`${participantID}_${new Date().toISOString()}`;
-  showIntroScreen();
+window.onload = async () => {
+  while (!participantID) {
+    participantID = prompt("Enter your Participant ID:");
+    if (participantID) participantID = participantID.trim();
+  }
+  sessionID = `${participantID}_${new Date().toISOString()}`;
+
+  // Load CSVs immediately so they are ready
+  for (const block of BLOCK_ORDER) {
+    try {
+      const response = await fetch(BLOCK_FILES[block]);
+      if (!response.ok) throw new Error(`Failed to load ${BLOCK_FILES[block]}`);
+      const text = await response.text();
+      const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
+      blocks[block] = rows.slice(0, TRIALS_PER_BLOCK); // or keep all if you want
+      console.log(`Loaded ${block} block:`, blocks[block]);
+    } catch (err) {
+      console.error(`Error loading block ${block}:`, err);
+      alert(`Could not load trials for ${block}. Check your CSV file.`);
+      return; // stop execution if failed
+    }
+  }
+
+  setupVisualElements();
+  showIntroScreen(); // keep the intro
 };
 
-function updateScreen(html,background=null){
-  const s=document.getElementById("screen");
-  s.innerHTML=html;
-  s.style.background=background!==null?background:"transparent";
-}
-
-async function loadCSVData(blockType) {
-  const response = await fetch(BLOCK_FILES[blockType]);
-  const text = await response.text();
-  const lines = text.trim().split('\n').slice(1);
-  const parsed = lines.map(line => line.split(','));
-  blocks[blockType] = parsed;
-}
 
 
 function showIntroScreen() {
@@ -423,13 +431,10 @@ function showRealTrialsIntro() {
 }
 
 async function startRealTrials() {
-  const block = BLOCK_ORDER[currentBlockIndex];
-  try {
-    await loadCSVData(block);
-  } catch (err) {}
-  rebuildBaseHTML();
-  updatePlayButton();
+  rebuildBaseHTML();   // reset the screen
+  updatePlayButton();  // show Start TEMPO Trial button
 }
+
 function setupVisualElements() {
   visuals.length=0;
   visuals.push(
@@ -457,6 +462,9 @@ function hideAll() {
   });
 }
 async function playTrial() {
+  console.log("Starting real trial:", BLOCK_ORDER[currentBlockIndex], "Trial #", trialCounter);
+console.log("Trial data:", blocks[BLOCK_ORDER[currentBlockIndex]][trialCounter-1]);
+
   document.getElementById("trialControls").innerHTML = "";
   updateScreen("");
   hideAll();
