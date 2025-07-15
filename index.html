@@ -96,11 +96,28 @@ let responseSubmitted=false;
 let trialStartTime=null;
 const visuals=[];
 
-window.onload=async()=>{
-  while(!participantID){participantID=prompt("Enter your Participant ID:"); if(participantID)participantID=participantID.trim();}
-  sessionID=${participantID}_${new Date().toISOString()};
+window.onload = async () => {
+  while (!participantID) {
+    participantID = prompt("Enter your Participant ID:");
+    if (participantID) participantID = participantID.trim();
+  }
+  sessionID = `${participantID}_${new Date().toISOString()}`;
+
+  for (const block of BLOCK_ORDER) {
+    try {
+      const response = await fetch(BLOCK_FILES[block]);
+      const text = await response.text();
+      const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
+      blocks[block] = rows.slice(0, TRIALS_PER_BLOCK); // Optionally shuffle if needed
+    } catch (err) {
+      alert(`Failed to load ${block} block: ` + err.message);
+      return;
+    }
+  }
+
   showIntroScreen();
 };
+
 
 function updateScreen(html,background=null){
   const s=document.getElementById("screen");
@@ -424,9 +441,6 @@ function showRealTrialsIntro() {
 
 async function startRealTrials() {
   const block = BLOCK_ORDER[currentBlockIndex];
-  try {
-    await loadCSVData(block);
-  } catch (err) {}
   rebuildBaseHTML();
   updatePlayButton();
 }
@@ -457,6 +471,10 @@ function hideAll() {
   });
 }
 async function playTrial() {
+  if (!blocks[block] || !blocks[block][trialCounter - 1]) {
+  updateScreen(`<h2>Error: No trial data found for ${block} block.</h2>`);
+  return;
+}
   document.getElementById("trialControls").innerHTML = "";
   updateScreen("");
   hideAll();
