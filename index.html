@@ -1,131 +1,174 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Melody's Mystery Elevator - Practice & Real Trials</title>
   <style>
-    body{margin:0;text-align:center;background:#fff;font-family:Arial,sans-serif;}
-    #visual-container{width:90vw;height:80vh;max-width:1400px;max-height:950px;margin:80px auto 0;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
-    #screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:transparent;}
-    .media-content{width:100%;height:100%;object-fit:contain;display:none;position:absolute;top:0;left:0;}
-    #overlay{position:fixed;inset:0;background:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:1000;}
-    .btn-primary{padding:20px 48px;font-size:1.5em;border-radius:12px;border:none;background:linear-gradient(135deg,#f3e7ff,#d0b3ff);color:#4b2e83;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(75,46,131,.3);transition:transform .2s,box-shadow .2s;}
-    .btn-primary:hover{transform:scale(1.05);box-shadow:0 6px 18px rgba(75,46,131,.4);}
-    .tempo-btn,.elevator-option{cursor:pointer;transition:transform .2s;}
-    .tempo-btn:hover,.elevator-option:hover{transform:scale(1.05);}
+    body { margin:0; text-align:center; background:#fff; font-family:Arial,sans-serif; }
+    #visual-container { width:90vw; height:80vh; max-width:1400px; max-height:950px; margin:80px auto; background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
+    #screen { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; background:transparent; }
+    .media-content { width:100%; height:100%; object-fit:contain; display:none; position:absolute; top:0; left:0; }
+    .btn-primary { padding:20px 48px; font-size:1.5em; border-radius:12px; border:none; background:linear-gradient(135deg,#f3e7ff,#d0b3ff); color:#4b2e83; font-weight:bold; cursor:pointer; box-shadow:0 4px 12px rgba(75,46,131,.3); transition:transform .2s,box-shadow .2s; }
+    .btn-primary:hover { transform:scale(1.05); box-shadow:0 6px 18px rgba(75,46,131,.4); }
+    .elevator-option, .tempo-btn { cursor:pointer; margin:0 20px; padding:14px 28px; font-size:1.2em; border-radius:10px; border:none; background:#ddd; }
+    .elevator-option:hover, .tempo-btn:hover { background:#ccc; }
   </style>
 </head>
 <body>
-  <div id="overlay"></div>
   <div id="visual-container">
     <div id="screen"></div>
-    <img class="media-content" id="stillframe1" src="stillframe1.png" />
-    <img class="media-content" id="gapStillframe" src="gapStillframe.png" />
-    <img class="media-content" id="stillframe2" src="stillframe2.png" />
-    <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
-    <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
-    <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
+    <img id="stillframe1" class="media-content" src="stillframe1.png">
+    <img id="gapStillframe" class="media-content" src="gapStillframe.png">
+    <img id="stillframe2" class="media-content" src="stillframe2.png">
+    <video id="video1" class="media-content" src="video1.mp4" playsinline preload="auto" muted></video>
+    <video id="gapVideo" class="media-content" src="gapVideo.mp4" playsinline preload="auto" muted></video>
+    <video id="video2" class="media-content" src="video2.mp4" playsinline preload="auto" muted></video>
   </div>
   <audio id="myAudio" hidden preload="auto"></audio>
   <div id="trialControls"></div>
 
   <script>
-    // Globals
-    const TRIALS_PER_BLOCK = 2;
-    const BLOCK_ORDER = ["tempo","pitch"];
-    const BLOCK_FILES = {tempo: "tempo_trials.csv", pitch: "pitch_trials.csv"};
-    const PRACTICE_TRIALS = {
-      tempo: [
-        {video: "PT_FAST1.mp4", narration: "This music is fast. The elevator sped up the song!", correct:"fast", responseRequired:false},
-        {video: "PT_FAST2.mp4", narration: "Did the music change?", correct:"fast", responseRequired:true},
-        {video: "PT_SLOW1.mp4", narration: "This music is slow. The elevator slowed the song!", correct:"slow", responseRequired:false},
-        {video: "PT_SLOW2.mp4", narration: "Did the music change?", correct:"slow", responseRequired:true}
-      ],
-      pitch: [
-        {video: "PT_HIGH1.mp4", narration: "This music sounds higher. The elevator raised the pitch!", correct:"high", responseRequired:false},
-        {video: "PT_HIGH2.mp4", narration: "Did the music change?", correct:"high", responseRequired:true},
-        {video: "PT_LOW1.mp4", narration: "This music sounds lower. The elevator lowered the pitch!", correct:"low", responseRequired:false},
-        {video: "PT_LOW2.mp4", narration: "Did the music change?", correct:"low", responseRequired:true}
-      ]
-    };
-    let blocks = {tempo:[], pitch:[]}, currentBlockIndex=0, trialCounter=1;
-    let participantID, sessionID, currentAudioFile, trialStartTime;
-    let visuals = [];
-
-    window.onload = async () => {
-      // Participant prompt
-      while(!participantID){participantID = prompt("Enter your Participant ID:"); if(participantID) participantID = participantID.trim();}
-      sessionID = `${participantID}_${new Date().toISOString()}`;
-      // Start practice for first block
-      runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
-    };
-
-    function updateScreen(html, bg="transparent"){
-      const s = document.getElementById("screen");
+    // UTILITY: render HTML in #screen
+    function updateScreen(html, bg='transparent'){
+      const s = document.getElementById('screen');
       s.innerHTML = html;
       s.style.background = bg;
     }
 
-    // Practice Trials Runner
-    function runPracticeTrials(blockType){
-      let i=0;
-      const next = () => {
-        if(i>=PRACTICE_TRIALS[blockType].length){
-          showRealTrialsIntro();
+    // CONFIG
+    const BLOCK_ORDER = ['tempo','pitch'];
+    const TRIALS_PER_BLOCK = 2;
+    const BLOCK_FILES = { tempo: 'tempo_trials.csv', pitch: 'pitch_trials.csv' };
+    const PRACTICE_TRIALS = {
+      tempo: [
+        {video:'PT_FAST1.mp4', narration:'This music is fast. The elevator sped up the song!', answer:'fast', requireResponse:false},
+        {video:'PT_FAST2.mp4', narration:'Did the music change?', answer:'fast', requireResponse:true}
+      ],
+      pitch: [
+        {video:'PT_HIGH1.mp4', narration:'This music sounds higher. The elevator raised the pitch!', answer:'high', requireResponse:false},
+        {video:'PT_HIGH2.mp4', narration:'Did the music change?', answer:'high', requireResponse:true}
+      ]
+    };
+
+    // STATE
+    let participantID = '';
+    let sessionID = '';
+    let currentBlock = 0; // index in BLOCK_ORDER
+    let realTrial = 0;    // 0-based index
+    let blocks = { tempo: [], pitch: [] };
+    let visuals = [];
+    let trialStartTime = 0;
+
+    window.onload = () => {
+      // get participant ID
+      while(!participantID){
+        participantID = prompt('Enter your Participant ID:');
+        if(participantID) participantID = participantID.trim();
+      }
+      sessionID = participantID + '_' + new Date().toISOString();
+      setupVisuals();
+      startIntro();
+    };
+
+    // INTRODUCTION SEQUENCE
+    function startIntro(){
+      updateScreen(`
+        <div style="display:flex;align-items:center;justify-content:center;">
+          <img src="Melody.png" style="max-height:60vh;margin-right:20px;" />
+          <div style="text-align:left;max-width:400px;">
+            <p>Hi, I'm Melody! I love music, and I ride an elevator to class every day.</p>
+            <p>Sometimes the elevator changes the music—let's practice noticing those changes!</p>
+            <button id="beginPractice" class="btn-primary">Begin Practice</button>
+          </div>
+        </div>
+      `);
+      document.getElementById('beginPractice').onclick = () => runPractice();
+    }
+
+    // PRACTICE FLOW
+    function runPractice(){
+      const blockType = BLOCK_ORDER[currentBlock];
+      const trials = PRACTICE_TRIALS[blockType];
+      let idx = 0;
+
+      function nextPractice(){
+        if(idx >= trials.length){
+          showRealIntro();
           return;
         }
-        const t = PRACTICE_TRIALS[blockType][i++];
-        updateScreen(`
-          <p style="font-size:1.5em;max-width:800px;">${t.narration}</p>
-          <audio id="narrate" src="${t.video.replace('.mp4','_NARRATION.mp3')}"></audio>
-        ");
-        const nar = document.getElementById("narrate");
-        nar.play().catch(()=>{});
-        nar.onended = () => playPracticeVideo(t);
-      };
-      next();
+        const t = trials[idx++];
+        updateScreen(`<p style="font-size:1.3em;max-width:700px;">${t.narration}</p>`);
+        // small delay then video
+        setTimeout(()=> playPracticeVideo(t), 500);
+      }
+      nextPractice();
 
       function playPracticeVideo(trial){
-        updateScreen(`<video id="pv" playsinline style="width:100%;height:100%;"><source src="${trial.video}" type="video/mp4"></video>`,"black");
-        const v = document.getElementById("pv");
-        v.play().catch(()=>{});
-        v.onended = () => {
-          if(trial.responseRequired) showPracticeChoice(trial.correct, next);
-          else setTimeout(next,2000);
+        updateScreen(`<video id="pvid" playsinline style="width:100%;height:100%;"><source src="${trial.video}" type="video/mp4"></video>`, 'black');
+        const vid = document.getElementById('pvid');
+        vid.play().catch(()=>{});
+        vid.onended = ()=>{
+          if(trial.requireResponse) showPracticeResponse(trial.answer, nextPractice);
+          else setTimeout(nextPractice, 1000);
         };
       }
 
-      function showPracticeChoice(correct, cb){
+      function showPracticeResponse(correct, cb){
         updateScreen(`
-          <h2>Did Melody's ride change the music?</h2>
+          <h2>How did the music change?</h2>
           <button class="tempo-btn" data-choice="${correct}">${correct}</button>
-          <button class="tempo-btn" data-choice="${correct==='fast'?'slow':'fast'}">${correct==='fast'?'slow':'fast'}</button>
-          <div id="fb" style="margin-top:20px;font-size:1.2em;"></div>
-        ');
-        document.querySelectorAll('.tempo-btn').forEach(b=>b.onclick=()=>{
-          const choice=b.getAttribute('data-choice');
-          const fb=document.getElementById('fb');
-          if(choice===correct){fb.textContent='Correct!';setTimeout(cb,1500);} else {fb.textContent='Oops! Try again.';}
+          <button class="tempo-btn" data-choice="${correct==='fast'||correct==='high'?'slow':'fast'}">${correct==='fast'||correct==='high'?'slow':'fast'}</button>
+          <div id="feedback"></div>
+        `);
+        document.querySelectorAll('.tempo-btn').forEach(btn=>{
+          btn.onclick = ()=>{
+            const choice = btn.getAttribute('data-choice');
+            const fb = document.getElementById('feedback');
+            if(choice===correct){ fb.innerText='Correct!'; setTimeout(cb,800); }
+            else { fb.innerText='Try again.'; }
+          };
         });
       }
     }
 
-    // Real Trials Intro
-    function showRealTrialsIntro(){
-      updateScreen(`<h1>Great! Now for the real trials.</h1><button id="startReal" class="btn-primary">Start</button>`,"#cce0dd");
-      document.getElementById('startReal').onclick = startRealTrials;
+    // REAL TRIALS INTRO
+    function showRealIntro(){
+      updateScreen(`
+        <h1>Practice complete!</h1>
+        <p>Now let's do the real ${BLOCK_ORDER[currentBlock].toUpperCase()} trials.</p>
+        <button id="startReal" class="btn-primary">Start Real Trials</button>
+      `);
+      document.getElementById('startReal').onclick = () => startRealTrials();
     }
 
+    // LOAD CSV and start real trials for current block
     async function startRealTrials(){
-      // load CSVs
-      for(const b of BLOCK_ORDER){
-        const resp = await fetch(BLOCK_FILES[b]);
-        const txt = await resp.text();
-        blocks[b] = txt.trim().split('\n').slice(1).map(r=>r.split(',').map(x=>x.trim()));
-      }
-      setupVisuals(); updatePlayButton();
+      const blockType = BLOCK_ORDER[currentBlock];
+      try{
+        const resp = await fetch(BLOCK_FILES[blockType]);
+        const text = await resp.text();
+        blocks[blockType] = text.trim().split('\n').slice(1).map(r=>r.split(',').map(x=>x.trim()));
+      }catch(e){ alert('Failed to load trials CSV'); return; }
+
+      realTrial = 0;
+      nextRealTrial();
     }
 
+    function nextRealTrial(){
+      const blockType = BLOCK_ORDER[currentBlock];
+      if(realTrial >= TRIALS_PER_BLOCK){
+        // move to next block or finish
+        currentBlock++;
+        if(currentBlock < BLOCK_ORDER.length) runPractice();
+        else updateScreen('<h1>All trials complete!</h1>');
+        return;
+      }
+      // show start button
+      updateScreen(`<button id="playReal" class="btn-primary">Play ${blockType.toUpperCase()} Trial ${realTrial+1} of ${TRIALS_PER_BLOCK}</button>`);
+      document.getElementById('playReal').onclick = () => playReal(blockType);
+    }
+
+    // setup visuals assets
     function setupVisuals(){
       visuals = [
         {el:document.getElementById('stillframe1')},
@@ -137,49 +180,68 @@
       ];
     }
 
-    function updatePlayButton(){
-      document.getElementById('trialControls').innerHTML = `<button id="playButton" class="btn-primary">Start ${BLOCK_ORDER[currentBlockIndex].toUpperCase()} #${trialCounter}</button>`;
-      document.getElementById('playButton').onclick = playRealTrial;
+    function hideAll(){
+      visuals.forEach(v=>{ v.el.style.display='none'; if(v.el.tagName==='VIDEO'){ v.el.pause(); v.el.currentTime=0; } });
     }
 
-    function hideAll(){visuals.forEach(v=>{v.el.style.display='none';if(v.el.tagName=='VIDEO'){v.el.pause();v.el.currentTime=0;}});}    
+    // play a real trial
+    async function playReal(blockType){
+      updateScreen(''); hideAll();
+      const trial = blocks[blockType][realTrial];
+      const [file,orig,gap,test] = trial;
+      const audio = document.getElementById('myAudio');
+      audio.src = file;
 
-    async function playRealTrial(){
-      document.getElementById('trialControls').innerHTML=''; hideAll(); updateScreen('');
-      const block=BLOCK_ORDER[currentBlockIndex];
-      const [file,o,g,t]=blocks[block][trialCounter-1];
-      const audio=document.getElementById('myAudio'); audio.src=file;
-      // prepare durations
-      const vids=visuals.filter(v=>v.el.tagName=='VIDEO').map(v=>v.el);
+      // preload videos for duration
+      const vids = visuals.filter(v=>v.el.tagName==='VIDEO').map(v=>v.el);
       await Promise.all(vids.map(v=>v.play().then(()=>v.pause())));
-      const durs=[parseFloat(o)-vids[0].duration, vids[0].duration, parseFloat(g)-vids[1].duration, vids[1].duration, vids[2].duration, parseFloat(t)-vids[2].duration];
-      let tt=0; for(let i=0;i<visuals.length;i++){visuals[i].start=tt;visuals[i].end=tt+=Math.max(0,durs[i]);}
-      await new Promise(r=>{audio.oncanplaythrough=r;}); trialStartTime=performance.now(); audio.play();
-      (function loop(){const ct=audio.currentTime;for(const v of visuals){if(ct>=v.start&&ct<v.end){hideAll();v.el.style.display='block';if(v.el.tagName=='VIDEO')v.el.play();break;}} if(ct<visuals[5].end)requestAnimationFrame(loop);else{hideAll(); showRealChoice();}})();
+
+      const o= parseFloat(orig), g=parseFloat(gap), t=parseFloat(test);
+      const seq = [ Math.max(0,o-vids[0].duration), vids[0].duration, Math.max(0,g-vids[1].duration), vids[1].duration, vids[2].duration, Math.max(0,t-vids[2].duration) ];
+      let time=0;
+      seq.forEach((d,i)=>{ visuals[i].start=time; visuals[i].end=time+=d; });
+
+      audio.oncanplaythrough = ()=>{};
+      await audio.play().catch(()=>{});
+      trialStartTime = performance.now();
+
+      // animation loop
+      (function frame(){
+        const ct = audio.currentTime;
+        for(const v of visuals){ if(ct>=v.start && ct< v.end){ hideAll(); v.el.style.display='block'; if(v.el.tagName==='VIDEO') v.el.play(); break; } }
+        if(ct < seq.reduce((a,b)=>a+b,0)) requestAnimationFrame(frame);
+        else finishRealTrial();
+      })();
     }
 
-    function showRealChoice(){
+    // after media ends
+    function finishRealTrial(){ hideAll(); showRealResponse(); }
+
+    function showRealResponse(){
       updateScreen(`
-        <h1>Which elevator did Melody ride?</h1>
+        <h2>Which elevator did Melody ride?</h2>
         <button class="elevator-option" data-choice="normal">Normal</button>
         <button class="elevator-option" data-choice="wonky">Wonky</button>
       `);
-      document.querySelectorAll('.elevator-option').forEach(b=>b.onclick=()=>handleRealChoice(b.getAttribute('data-choice')));
+      document.querySelectorAll('.elevator-option').forEach(b=> b.onclick = ()=> handleRealResponse(b.getAttribute('data-choice')));
     }
 
-    function handleRealChoice(choice){
-      const rt=(performance.now()-trialStartTime)/1000;
-      const correct = /_gap/.test(currentAudioFile)?'normal':'wonky';
-      // send data
-      fetch('https://api.backendless.com/.../data/responses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({participant:participantID,session:sessionID,block:BLOCK_ORDER[currentBlockIndex],trial:trialCounter,choice,audio:currentAudioFile,correct,rt})});
-      // advance
-      trialCounter++; if(trialCounter>TRIALS_PER_BLOCK){trialCounter=1;currentBlockIndex++;}
-      if(currentBlockIndex>=BLOCK_ORDER.length){updateScreen('<h1>All done, thanks!</h1>');}
-      else updatePlayButton();
+    function handleRealResponse(choice){
+      const rt = (performance.now() - trialStartTime)/1000;
+      const correct = /_gap/.test(document.getElementById('myAudio').src)? 'normal':'wonky';
+      // send data async (no await)
+      fetch('https://api.backendless.com/.../data/responses',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({participant:participantID, session:sessionID, block:BLOCK_ORDER[currentBlock], trial:realTrial+1, choice, correct, rt})
+      });
+      realTrial++;
+      setTimeout(nextRealTrial,500);
     }
   </script>
 </body>
 </html>
+
+
 
 
 
