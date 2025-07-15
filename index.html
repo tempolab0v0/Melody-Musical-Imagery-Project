@@ -341,7 +341,9 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
 
 function showTempoResponseScreen(correctAnswer, callback) {
   updateScreen(`
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #cce0dd; padding: 20px;">
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+    background: url('/mnt/data/0372e1b1-84c0-4ecf-9841-fbaf1a4be76c.png') center/cover no-repeat;
+    padding: 20px;">
       <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
       <div style="display: flex; gap: 40px; margin-top: 20px;">
         <button class="tempo-btn" data-choice="fast" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Fast</button>
@@ -383,6 +385,43 @@ function showTempoResponseScreen(correctAnswer, callback) {
 }
 
 /* REAL TRIALS */
+
+function showRealTrialsIntro() {
+  updateScreen(`
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;
+      background: url('/mnt/data/0372e1b1-84c0-4ecf-9841-fbaf1a4be76c.png') center/cover no-repeat;
+      padding:40px;box-sizing:border-box;">
+      <h1 style="color:#4b2e83; font-size:2em; margin-bottom:20px;">Amazing work!</h1>
+      <p style="max-width:800px; font-size:1.3em; text-align:center; line-height:1.6; margin-bottom:20px;">
+        Now you’re ready for the real trials!<br><br>
+        Listen carefully: If the music changes (faster or slower), choose the <strong>magical</strong> elevator.<br>
+        If it stays the same, choose the <strong>normal</strong> elevator.
+      </p>
+      <audio id="realInstructionsAudio" src="real_trials_instructions.mp3"></audio>
+      <button id="playRealInstructions" class="btn-primary" style="margin-top:20px;">Click to Play Instructions</button>
+      <button id="startRealTrials" class="btn-primary" style="display:none; margin-top:20px;">Start Real Trials</button>
+    </div>
+  `);
+
+  const playBtn = document.getElementById("playRealInstructions");
+  const startBtn = document.getElementById("startRealTrials");
+  const audio = document.getElementById("realInstructionsAudio");
+
+  playBtn.addEventListener("click", async () => {
+    playBtn.disabled = true;
+    try {
+      await audio.play();
+    } catch (err) {
+      console.warn("Autoplay blocked or failed:", err);
+    }
+    audio.onended = () => {
+      startBtn.style.display = "inline-block";
+    };
+  });
+
+  startBtn.addEventListener("click", startRealTrials);
+}
+
 async function startRealTrials() {
   const block = BLOCK_ORDER[currentBlockIndex];
   try {
