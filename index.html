@@ -96,28 +96,11 @@ let responseSubmitted=false;
 let trialStartTime=null;
 const visuals=[];
 
-window.onload = async () => {
-  while (!participantID) {
-    participantID = prompt("Enter your Participant ID:");
-    if (participantID) participantID = participantID.trim();
-  }
-  sessionID = `${participantID}_${new Date().toISOString()}`;
-
-  for (const block of BLOCK_ORDER) {
-    try {
-      const response = await fetch(BLOCK_FILES[block]);
-      const text = await response.text();
-      const rows = text.trim().split("\n").slice(1).map(r => r.split(",").map(x => x.trim()));
-      blocks[block] = rows.slice(0, TRIALS_PER_BLOCK); // Optionally shuffle if needed
-    } catch (err) {
-      alert(`Failed to load ${block} block: ` + err.message);
-      return;
-    }
-  }
-
+window.onload=async()=>{
+  while(!participantID){participantID=prompt("Enter your Participant ID:"); if(participantID)participantID=participantID.trim();}
+  sessionID=`${participantID}_${new Date().toISOString()}`;
   showIntroScreen();
 };
-
 
 function updateScreen(html,background=null){
   const s=document.getElementById("screen");
@@ -151,7 +134,7 @@ function showIntroScreen() {
         <audio id="introAudio" src="intro_narration.mp3"></audio>
       </div>
     </div>
- `);
+  `);
 
   const introAudio = document.getElementById("introAudio");
   const continueBtn = document.getElementById("continueIntro");
@@ -441,6 +424,9 @@ function showRealTrialsIntro() {
 
 async function startRealTrials() {
   const block = BLOCK_ORDER[currentBlockIndex];
+  try {
+    await loadCSVData(block);
+  } catch (err) {}
   rebuildBaseHTML();
   updatePlayButton();
 }
@@ -458,7 +444,7 @@ function setupVisualElements() {
 function updatePlayButton() {
   const block = BLOCK_ORDER[currentBlockIndex];
   const trialControls = document.getElementById("trialControls");
-  trialControls.innerHTML = <button id="playButton" class="btn-primary">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>;
+  trialControls.innerHTML = `<button id="playButton" class="btn-primary">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
   document.getElementById("playButton").addEventListener("click", playTrial);
 }
 function hideAll() {
@@ -470,25 +456,16 @@ function hideAll() {
     }
   });
 }
-
-  async function playTrial() {
-  const block = BLOCK_ORDER[currentBlockIndex];
-
-  if (!blocks[block] || !blocks[block][trialCounter - 1]) {
-    updateScreen(`<h2>Error: No trial data found for ${block} block.</h2>`);
-    return;
-  }
-
+async function playTrial() {
   document.getElementById("trialControls").innerHTML = "";
   updateScreen("");
   hideAll();
-
-  const trial = blocks[block][trialCounter - 1];
+  const block = BLOCK_ORDER[currentBlockIndex];
+  const trial = blocks[block][trialCounter-1];
   if (!trial) {
     updateScreen(`<h2>Error: No trial data found. Please check your CSV and block setup.</h2>`);
     return;
   }
-
   const [filename, original, gap, test] = trial;
   const originalSec = parseFloat(original);
   const gapSec = parseFloat(gap);
@@ -497,21 +474,14 @@ function hideAll() {
   const audio = document.getElementById("myAudio");
   audio.src = filename;
   currentAudioFile = filename;
-
   const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
-  await Promise.all([
-    v1.play().then(() => v1.pause()),
-    vGap.play().then(() => vGap.pause()),
-    v2.play().then(() => v2.pause())
-  ]);
-
+  await Promise.all([v1.play().then(() => v1.pause()), vGap.play().then(() => vGap.pause()), v2.play().then(() => v2.pause())]);
   const video1Sec = v1.duration;
   const gapVideoSec = vGap.duration;
   const video2Sec = v2.duration;
   const preStillSec = Math.max(0, originalSec - video1Sec);
   const gapStillSec = Math.max(0, gapSec - gapVideoSec);
   const postStillSec = Math.max(0, testSec - video2Sec);
-
   let t = 0;
   visuals[0].start = t; visuals[0].end = t += preStillSec;
   visuals[1].start = t; visuals[1].end = t += video1Sec;
@@ -521,10 +491,8 @@ function hideAll() {
   visuals[5].start = t; visuals[5].end = t += postStillSec;
 
   await new Promise((resolve) => { audio.oncanplaythrough = resolve; });
-
   trialStartTime = performance.now();
   let currentVisual = null;
-
   function updateVisuals() {
     const time = audio.currentTime;
     for (const v of visuals) {
@@ -545,13 +513,9 @@ function hideAll() {
       showResponseOptions();
     }
   }
-
   await audio.play();
   updateVisuals();
 }
-
-
-  
 function showResponseOptions() {
   updateScreen(`
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px;">
@@ -571,7 +535,7 @@ function showResponseOptions() {
           <div style="margin-top:12px;font-weight:bold;">Wonky Elevator</div>
         </div>
       </div>
-    </div> `);
+    </div>`);
   document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
   document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"), { once: true });
 }
@@ -602,7 +566,7 @@ function handleResponse(choice) {
       trialCounter=1; currentBlockIndex++;
     }
     if(currentBlockIndex>=BLOCK_ORDER.length){
-updateScreen(`<h1>Thank you for participating! All trials complete.</h1>`);
+      updateScreen(`<h1>Thank you for participating! All trials complete.</h1>`);
     }else{
       rebuildBaseHTML();
       runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
@@ -623,6 +587,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
