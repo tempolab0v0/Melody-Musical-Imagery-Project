@@ -497,10 +497,16 @@ function runPracticeTrials(blockType){
     }
 
 async function startRealTrials() {
-  await loadCSVData("tempo");   // <-- ensures tempo_trials.csv is loaded first
-  rebuildBaseHTML();             // resets visuals and state
-  updatePlayButton();            // adds "Start TEMPO Trial 1 of 2" button
+  try {
+    await loadCSVData("tempo");
+    console.log("✅ tempo trials loaded:", blocks.tempo);
+  } catch(err) {
+    console.error("❌ failed to load tempo CSV:", err);
+  }
+  rebuildBaseHTML();
+  updatePlayButton();
 }
+
     /* --------------------------------------------------
        REAL TRIALS  (unchanged logic, but no more document.body manipulation)
     --------------------------------------------------*/
