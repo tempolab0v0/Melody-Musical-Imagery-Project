@@ -705,23 +705,6 @@ async function startRealTrials() {
       }
     }
 
-    function runPracticeTrials(blockType) {
-      const trialControls = document.getElementById("trialControls");
-      let i = 0;
-
-      function showNarrationScreenPractice(trial, nextStep) {
-        trialControls.innerHTML = `
-          <div style="padding: 40px; font-size: 1.4em; max-width: 800px; margin: auto;">
-            <p>${trial.narrationText}</p>
-            <button id="continueButton" class="btn-primary" style="margin-top: 20px; font-size: 1em;">Continue</button>
-          </div>
-        `;
-        document.getElementById("continueButton").addEventListener("click", () => {
-          trialControls.innerHTML = "";
-          nextStep();
-        });
-      }
-
       function playNextPractice() {
         if (i >= PRACTICE_TRIALS[blockType].length) {
           rebuildBaseHTML();
