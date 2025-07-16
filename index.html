@@ -466,6 +466,29 @@ function setupVisualElements() {
     {el:document.getElementById("stillframe2"),start:0,end:0}
   );
 }
+
+function showAutoplayOverlay(audio, callback) {
+  const overlay = document.getElementById("overlay");
+  overlay.innerHTML =
+    '<button id="resumeAudio" class="btn-primary">Start Audio</button>';
+  overlay.style.display = "flex";
+  document
+    .getElementById("resumeAudio")
+    .addEventListener(
+      "click",
+      async () => {
+        overlay.style.display = "none";
+        try {
+          await audio.play();
+          callback();
+        } catch (err) {
+          console.warn("Audio play failed:", err);
+        }
+      },
+      { once: true }
+    );
+}
+
 function updatePlayButton() {
   const block = BLOCK_ORDER[currentBlockIndex];
   const trialControls = document.getElementById("trialControls");
@@ -531,6 +554,15 @@ async function playTrial() {
         break;
       }
     }
+
+try {
+  await audio.play();
+  updateVisuals();  // start showing the video sequence
+} catch (err) {
+  console.warn("Audio autoplay blocked:", err);
+  showAutoplayOverlay(audio, updateVisuals);
+}
+
     if (time < visuals[visuals.length - 1].end) {
       requestAnimationFrame(updateVisuals);
     } else {
