@@ -99,6 +99,7 @@ let responseSubmitted=false;
 let trialStartTime=null;
 const visuals=[];
 
+  
 window.onload = async () => {
   while (!participantID) {
     participantID = prompt("Enter your Participant ID:");
@@ -403,6 +404,176 @@ function showTempoResponseScreen(correctAnswer, callback) {
   });
 }
 
+
+function runPitchPractice() {
+  showPitchIntro1();
+}
+
+function showPitchIntro1() {
+  updateScreen(`
+    <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
+      <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
+        Now let’s learn about pitch.<br>
+        Pitch is how high or low the music sounds.<br><br>
+        Listen to this clip and hear how the music sounds higher when Melody rides the elevator.
+      </p>
+      <audio id="pitchHigh1Narration" src="PT_HIGH1_NARRATION.mp3"></audio>
+    </div>
+  `);
+
+  const narration = document.getElementById("pitchHigh1Narration");
+  narration.play().then(() => {
+    narration.onended = playPitchHigh1;
+  }).catch(() => {
+    playPitchHigh1();
+  });
+}
+
+function playPitchHigh1() {
+  updateScreen(`
+    <video id="pitchHigh1" width="100%" height="100%" playsinline style="background:black;">
+      <source src="PT_HIGH1.mp4" type="video/mp4" />
+    </video>
+  `);
+  const video = document.getElementById("pitchHigh1");
+  video.play().catch(e => console.warn("Video play failed:", e));
+  video.onended = showPitchIntro2;
+}
+
+function showPitchIntro2() {
+  updateScreen(`
+    <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
+      <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
+        That was high! Now let’s try one that goes lower.<br><br>
+        Listen closely as Melody takes another trip!
+      </p>
+      <audio id="pitchSlow1Narration" src="PT_SLOW1_NARRATION.mp3"></audio>
+    </div>
+  `);
+
+  const narration = document.getElementById("pitchSlow1Narration");
+  narration.play().then(() => {
+    narration.onended = playPitchSlow1;
+  }).catch(() => {
+    playPitchSlow1();
+  });
+}
+
+function playPitchSlow1() {
+  updateScreen(`
+    <video id="pitchSlow1" width="100%" height="100%" playsinline style="background:black;">
+      <source src="PT_SLOW1.mp4" type="video/mp4" />
+    </video>
+  `);
+  const video = document.getElementById("pitchSlow1");
+  video.play().catch(e => console.warn("Video play failed:", e));
+  video.onended = showPitchInstructions;
+}
+
+function showPitchInstructions() {
+  setTimeout(() => {
+    updateScreen(`
+      <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
+        <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
+          Great job! Now it's your turn.<br><br>
+          After each clip, decide whether the music got <strong>higher</strong>, <strong>lower</strong>, or stayed <strong>the same</strong>!<br>
+          Let’s begin!
+        </p>
+        <audio id="pitchInstructions" src="PT_PITCH_INSTRUCTIONS.mp3"></audio>
+      </div>
+    `);
+
+    const audio = document.getElementById("pitchInstructions");
+    audio.play().then(() => {
+      audio.onended = () => setTimeout(runPitchPracticeTrials, 1000);
+    }).catch(() => {
+      runPitchPracticeTrials();
+    });
+  }, 1500);
+}
+
+function runPitchPracticeTrials() {
+  const practiceTrials = [
+    { video: "PT_HIGH2.mp4", correct: "high" },
+    { video: "PT_SLOW2.mp4", correct: "low" }
+  ];
+  let i = 0;
+
+  function nextPractice() {
+    if (i >= practiceTrials.length) {
+      showRealTrialsIntro(); // or another function if needed
+      return;
+    }
+    const trial = practiceTrials[i++];
+    playPitchPracticeVideo(trial.video, trial.correct, nextPractice);
+  }
+
+  nextPractice();
+}
+
+function playPitchPracticeVideo(videoFile, correctAnswer, callback) {
+  updateScreen(`
+    <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#cce0dd;">
+      <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:#cce0dd;">
+        <source src="${videoFile}" type="video/mp4">
+      </video>
+    </div>
+  `);
+
+  const video = document.getElementById("practiceVideo");
+  video.onended = () => {
+    showPitchResponseScreen(correctAnswer, callback);
+  };
+
+  video.play().catch(() => {
+    showPitchResponseScreen(correctAnswer, callback);
+  });
+}
+
+function showPitchResponseScreen(correctAnswer, callback) {
+  updateScreen(`
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+      background: url('/mnt/data/0372e1b1-84c0-4ecf-9841-fbaf1a4be76c.png') center/cover no-repeat; padding: 20px;">
+      <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
+      <div style="display: flex; gap: 40px; margin-top: 20px;">
+        <button class="tempo-btn" data-choice="high" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">High</button>
+        <button class="tempo-btn" data-choice="low" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Low</button>
+        <button class="tempo-btn" data-choice="same" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Same</button>
+      </div>
+      <audio id="correctSound" src="correct_feedback.mp3"></audio>
+      <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
+      <div id="feedback" style="margin-top: 20px; font-size: 1.2em; color: red;"></div>
+    </div>
+  `);
+
+  const buttons = document.querySelectorAll('.tempo-btn');
+  let answered = false;
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (answered) return;
+      answered = true;
+      const choice = btn.getAttribute('data-choice');
+      buttons.forEach(b => b.disabled = true);
+
+      if (choice === correctAnswer) {
+        document.getElementById("feedback").style.color = "green";
+        document.getElementById("feedback").innerText = "Correct!";
+        document.getElementById("correctSound").play().catch(() => {});
+        setTimeout(callback, 1500);
+      } else {
+        document.getElementById("feedback").style.color = "red";
+        document.getElementById("feedback").innerText = "Oops! Try again.";
+        document.getElementById("wrongSound").play().catch(() => {});
+        setTimeout(() => {
+          answered = false;
+          buttons.forEach(b => b.disabled = false);
+        }, 2000);
+      }
+    });
+  });
+}
+
 /* REAL TRIALS */
 
 function showRealTrialsIntro() {
@@ -439,8 +610,18 @@ function showRealTrialsIntro() {
     };
   });
 
-  startBtn.addEventListener("click", startRealTrials);
+  startBtn.addEventListener("click", () => {
+    startRealTrials(() => {
+      // After tempo real trials are done, trigger pitch practice
+      if (BLOCK_ORDER[currentBlockIndex - 1] === "tempo") {
+        runPitchPractice();
+      } else {
+        updatePlayButton(); // For future blocks if needed
+      }
+    });
+  });
 }
+
 
 async function startRealTrials() {
   const block = BLOCK_ORDER[currentBlockIndex];
