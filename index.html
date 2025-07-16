@@ -594,7 +594,7 @@ function handleResponse(choice) {
       updateScreen(`<h1>Thank you for participating! All trials complete.</h1>`);
     }else{
       rebuildBaseHTML();
-      runPracticeTrials(BLOCK_ORDER[currentBlockIndex]);
+      updatePlayButton(BLOCK_ORDER[currentBlockIndex]);
     }
   })
   .catch(()=>{
