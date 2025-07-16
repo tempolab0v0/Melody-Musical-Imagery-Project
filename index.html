@@ -66,6 +66,7 @@
     .tempo-btn:hover,.elevator-option:hover{transform:scale(1.05);}
   </style>
 </head>
+
 <body>
   <div id="overlay" style="display:none;"></div>
   <div id="visual-container">
@@ -81,6 +82,7 @@
   <audio id="narrationAudio" hidden preload="auto"></audio>
   <audio id="introNarration" src="intro_narration.mp3" hidden preload="auto"></audio>
   <div id="trialControls"></div>
+
 <script>
 const TRIALS_PER_BLOCK=2;
 const BLOCK_ORDER=["tempo","pitch"];
@@ -141,7 +143,7 @@ function showIntroScreen() {
         <p style="font-size:1.5em;line-height:1.6;">
           Hi there!<br>
           My name is Melody, and I love music!<br>
-          Every day, I ride an elevator to get to music class.<br>
+          Every day, I ride a musical elevator to get to music class.<br>
           But today, something strange is happening...
         </p>
         <button id="continueIntro" class="btn-primary" style="margin-top:30px;font-size:1em;">Click to Play</button>
@@ -296,8 +298,10 @@ function showTempoInstructions() {
     updateScreen(`
       <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
         <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
-          Great! Now let's practice even more.<br><br>
-          Listen carefully and tell me if the music is <strong>faster</strong>, <strong>slower</strong>, or <strong>the same</strong>!
+          Great! Now it's your turn!<br><br>
+          After each clip, decide whether the music got <strong>faster</strong>, <strong>slower</strong>, or stayed <strong>the same</strong>! <br>
+          When you hear the music, listen closely and click your answer. <br><br>
+          Let's begin!
         </p>
         <audio id="tempoInstructions" src="PT_TEMPO_INSTRUCTIONS.mp3"></audio>
       </div>
@@ -407,9 +411,10 @@ function showRealTrialsIntro() {
       padding:40px;box-sizing:border-box;">
       <h1 style="color:#4b2e83; font-size:2em; margin-bottom:20px;">Amazing work!</h1>
       <p style="max-width:800px; font-size:1.3em; text-align:center; line-height:1.6; margin-bottom:20px;">
-        Now you’re ready for the real trials!<br><br>
-        Listen carefully: If the music changes (faster or slower), choose the <strong>magical</strong> elevator.<br>
-        If it stays the same, choose the <strong>normal</strong> elevator.
+        Now the real trials begin!<br><br>
+        If the music changes and sounds faster or slower, choose the <strong>magical</strong> elevator.<br>
+        If it stays the same, choose the <strong>normal</strong> elevator. <br><br>
+        Listen carefully, and good luck!
       </p>
       <audio id="realInstructionsAudio" src="real_trials_instructions.mp3"></audio>
       <button id="playRealInstructions" class="btn-primary" style="margin-top:20px;">Click to Play Instructions</button>
