@@ -801,7 +801,7 @@ fetch("https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288
     runPitchDemo(); // start pitch practice before pitch trials
   } else {
     rebuildBaseHTML();
-    updatePlayButton(BLOCK_ORDER[currentBlockIndex]);
+updatePlayButton();
   }
 })
 .catch(() => {
