@@ -493,7 +493,7 @@ function showPitchInstructions() {
 function runPitchPracticeTrials() {
   const practiceTrials = [
     { video: "PT_HIGH2.mp4", correct: "high" },
-    { video: "PT_SLOW2.mp4", correct: "low" }
+    { video: "PT_LOW2.mp4", correct: "low" }
   ];
   let i = 0;
 
@@ -639,11 +639,6 @@ async function startRealTrials(callback = () => {}) {
 
   rebuildBaseHTML();
   updatePlayButton();
-
-  // Hook callback into last trial
-  const oldHandleResponse = handleResponse;
-  handleResponse = function(choice) {
-    oldHandleResponse(choice);
 
     // If that was the final trial of this block...
     if (trialCounter === 1 && currentBlockIndex > 0) {
