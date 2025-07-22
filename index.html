@@ -595,8 +595,6 @@ function showRealTrialsIntro() {
 }
 
 async function startRealTrials() {
-  currentBlockIndex = 0; // ⬅️ FORCE tempo block for first set of real trials
-  trialCounter = 1;
   const block = BLOCK_ORDER[currentBlockIndex];
 
   try {
