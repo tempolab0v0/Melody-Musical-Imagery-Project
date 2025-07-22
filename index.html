@@ -528,7 +528,8 @@ function showPitchResponseScreen(correctAnswer, callback) {
     });
   });
 }
-function showPitchInstructions() {
+
+  function showPitchInstructions() {
   setTimeout(() => {
     updateScreen(`
       <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
@@ -545,18 +546,20 @@ function showPitchInstructions() {
     audio.play().then(() => {
       audio.onended = () => setTimeout(() => {
         pitchPracticeCompleted = true;
-        currentBlockIndex = 1; // pitch block
+        currentBlockIndex = 1; // 👈 Ensure pitch block is set
         trialCounter = 1;
         startRealTrials();
       }, 1000);
     }).catch(err => {
       console.warn("Autoplay issue:", err);
+      pitchPracticeCompleted = true;
       currentBlockIndex = 1;
       trialCounter = 1;
       startRealTrials();
     });
   }, 1500);
 }
+
 
 /* REAL TRIALS */
 
