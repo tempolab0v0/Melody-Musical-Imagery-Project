@@ -90,6 +90,8 @@ const TRIALS_PER_BLOCK=2;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES={tempo:"tempo_trials.csv",pitch:"pitch_trials.csv"};
 
+let pitchPracticeCompleted = false;
+
 let blocks={tempo:[],pitch:[]};
 let currentBlockIndex=0;
 let trialCounter=1;
@@ -133,7 +135,6 @@ async function loadCSVData(blockType) {
   const parsed = lines.map(line => line.split(','));
   blocks[blockType] = parsed;
 }
-
 
 function showIntroScreen() {
   updateScreen(`
@@ -543,6 +544,7 @@ function showPitchInstructions() {
     const audio = document.getElementById("pitchInstructions");
     audio.play().then(() => {
       audio.onended = () => setTimeout(() => {
+        pitchPracticeCompleted = true;
         currentBlockIndex = 1; // pitch block
         trialCounter = 1;
         startRealTrials();
@@ -772,49 +774,52 @@ function showResponseOptions() {
 function handleResponse(choice) {
   if (responseSubmitted) return;
   responseSubmitted = true;
+
   const imgs = document.querySelectorAll('.elevator-option');
-  imgs.forEach(img => img.style.pointerEvents='none');
-  const reactionTimeSec = (performance.now() - trialStartTime)/1000;
+  imgs.forEach(img => img.style.pointerEvents = 'none');
+
+  const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
   const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
-  const correctAnswer = isNormal?"normal":"wonky";
+  const correctAnswer = isNormal ? "normal" : "wonky";
+
   const entry = {
-    participant:participantID,session:sessionID,
-    block:BLOCK_ORDER[currentBlockIndex],
-    trial_num:trialCounter,
-    timestamp:new Date().toISOString(),
+    participant: participantID,
+    session: sessionID,
+    block: BLOCK_ORDER[currentBlockIndex],
+    trial_num: trialCounter,
+    timestamp: new Date().toISOString(),
     choice,
-    audio:currentAudioFile,
-    correct_answer:correctAnswer,
-    reaction_time_sec:parseFloat(reactionTimeSec.toFixed(3))
+    audio: currentAudioFile,
+    correct_answer: correctAnswer,
+    reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
   };
-fetch("https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(entry)
-})
-.then(() => {
-  trialCounter++;
-  if (trialCounter > TRIALS_PER_BLOCK) {
-    trialCounter = 1;
-    currentBlockIndex++;
-  }
 
-  if (currentBlockIndex >= BLOCK_ORDER.length) {
-    updateScreen(`<h1>Thank you for participating! All trials complete.</h1>`);
-  } else if (BLOCK_ORDER[currentBlockIndex] === "pitch") {
-    runPitchDemo(); // start pitch practice before pitch trials
-  } else {
-    rebuildBaseHTML();
-    updatePlayButton(BLOCK_ORDER[currentBlockIndex]);
-  }
-})
-.catch(() => {
-  alert("Failed to record response.");
-  responseSubmitted = false;
-});
+  fetch("https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry)
+  })
+  .then(() => {
+    trialCounter++;
+    if (trialCounter > TRIALS_PER_BLOCK) {
+      trialCounter = 1;
+      currentBlockIndex++;
+    }
 
-
-} 
+    if (currentBlockIndex >= BLOCK_ORDER.length) {
+      updateScreen(`<h1>Thank you for participating! All trials complete.</h1>`);
+    } else if (BLOCK_ORDER[currentBlockIndex] === "pitch" && !pitchPracticeCompleted) {
+      runPitchDemo(); // Only run pitch practice the first time
+    } else {
+      rebuildBaseHTML();
+      updatePlayButton(BLOCK_ORDER[currentBlockIndex]);
+    }
+  })
+  .catch(() => {
+    alert("Failed to record response.");
+    responseSubmitted = false;
+  });
+}
 function rebuildBaseHTML() { 
   updateScreen("");
   document.getElementById("trialControls").innerHTML="";
