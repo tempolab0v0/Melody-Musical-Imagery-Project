@@ -328,6 +328,8 @@ function runTempoPractice() {
 
   function nextPractice() {
     if (i >= practiceTrials.length) {
+      currentBlockIndex = 0; // ✅ SET tempo block here
+      trialCounter = 1;
       showRealTrialsIntro();
       return;
     }
@@ -337,6 +339,7 @@ function runTempoPractice() {
 
   nextPractice();
 }
+
 
 function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
   updateScreen(`
@@ -593,10 +596,10 @@ function showRealTrialsIntro() {
 }
 
 async function startRealTrials() {
-  const block = BLOCK_ORDER[currentBlockIndex];
+  const block = BLOCK_ORDER[currentBlockIndex]; // <-- don't override here
 
   try {
-    await loadCSVData(block);
+    await loadCSVData(block); // you already loaded it at startup — can skip this line if needed
     if (!blocks[block] || blocks[block].length === 0) {
       updateScreen(`<h2>⚠️ No trials found in ${BLOCK_FILES[block]}. Please check your CSV.</h2>`);
       return;
