@@ -528,35 +528,40 @@ function showPitchResponseScreen(correctAnswer, callback) {
   });
 }
 
-  function showPitchInstructions() {
-  setTimeout(() => {
-    updateScreen(`
-      <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
-        <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
+function showPitchInstructions() {
+  updateScreen(`
+    <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
+      <div style="text-align:center;max-width:800px;">
+        <p style="font-size:1.5em;line-height:1.8;">
           Great! Now it's your turn!<br><br>
           After each clip, decide whether the pitch got <strong>higher</strong>, <strong>lower</strong>, or stayed <strong>the same</strong>! <br>
           When you're ready, we'll start the real trials!
         </p>
+        <button id="playPitchInstructions" class="btn-primary" style="margin-top:30px;">Click to Play Instructions</button>
         <audio id="pitchInstructions" src="PITCH_INSTRUCTIONS.mp3"></audio>
       </div>
-    `);
+    </div>
+  `);
 
-    const audio = document.getElementById("pitchInstructions");
-    audio.play().then(() => {
-      audio.onended = () => setTimeout(() => {
+  const audio = document.getElementById("pitchInstructions");
+  const button = document.getElementById("playPitchInstructions");
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      await audio.play();
+    } catch (err) {
+      console.warn("Autoplay issue on pitch instructions:", err);
+    }
+    audio.onended = () => {
+      setTimeout(() => {
         pitchPracticeCompleted = true;
-        currentBlockIndex = 1; // 👈 Ensure pitch block is set
+        currentBlockIndex = 1;
         trialCounter = 1;
         startRealTrials();
-      }, 1000);
-    }).catch(err => {
-      console.warn("Autoplay issue:", err);
-      pitchPracticeCompleted = true;
-      currentBlockIndex = 1;
-      trialCounter = 1;
-      startRealTrials();
-    });
-  }, 1500);
+      }, 2000); // leave time after audio ends
+    };
+  });
 }
 
 
