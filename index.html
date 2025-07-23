@@ -543,12 +543,12 @@ function showPitchResponseScreen(correctAnswer, callback) {
 
     const audio = document.getElementById("pitchInstructions");
     audio.play().then(() => {
-      audio.onended = () => setTimeout(() => {
-        pitchPracticeCompleted = true;
-        currentBlockIndex = 1; // 👈 Ensure pitch block is set
-        trialCounter = 1;
-        startRealTrials();
-      }, 1000);
+      audio.onended = () => {
+  setTimeout(() => {
+    currentBlockIndex = 1; // 👈 Ensure pitch block is set
+    trialCounter = 1;
+    startPitchRealTrialsIntro();
+  }, 1000);
     }).catch(err => {
       console.warn("Autoplay issue:", err);
       pitchPracticeCompleted = true;
@@ -559,6 +559,10 @@ function showPitchResponseScreen(correctAnswer, callback) {
   }, 1500);
 }
 
+function startPitchRealTrialsIntro() {
+  pitchPracticeCompleted = true;
+  showRealTrialsIntro(); // Reuse the same instruction screen
+}
 
 /* REAL TRIALS */
 
