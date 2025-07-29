@@ -756,7 +756,7 @@ function showResponseOptions() {
       <p style="max-width:600px;font-size:1.1em;margin-bottom:30px;">
         Now that the music is over, think back to how it sounded before and after the pause.<br><br>
         If the music stayed the same, choose the <strong>normal</strong> elevator.<br>
-        If the music changed after the pause, choose the <strong>magical</strong> elevator.
+        If the music changed after the pause, choose the <strong>wonky</strong> elevator.
       </p>
       <div style="display:flex;justify-content:center;gap:80px;">
         <div style="text-align:center;">
@@ -764,13 +764,13 @@ function showResponseOptions() {
           <div style="margin-top:12px;font-weight:bold;">Normal Elevator</div>
         </div>
         <div style="text-align:center;">
-          <img src="magical.png" class="elevator-option" id="magicalElevator" alt="Magical Elevator" style="width:300px;">
-          <div style="margin-top:12px;font-weight:bold;">Magical Elevator</div>
+          <img src="wonky.png" class="elevator-option" id="wonkyElevator" alt="Wonky Elevator" style="width:300px;">
+          <div style="margin-top:12px;font-weight:bold;">Wonky Elevator</div>
         </div>
       </div>
     </div>`);
   document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
-  document.getElementById("magicalElevator").addEventListener("click", () => handleResponse("magical"), { once: true });
+  document.getElementById("wonkyElevator").addEventListener("click", () => handleResponse("wonky"), { once: true });
 }
 function handleResponse(choice) {
   if (responseSubmitted) return;
@@ -781,7 +781,7 @@ function handleResponse(choice) {
 
   const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
   const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
-  const correctAnswer = isNormal ? "normal" : "magical";
+  const correctAnswer = isNormal ? "normal" : "wonky";
 
   const entry = {
     participant: participantID,
