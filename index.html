@@ -603,7 +603,6 @@ async function startRealTrials() {
   const block = BLOCK_ORDER[currentBlockIndex]; // <-- don't override here
 
   try {
-    await loadCSVData(block); // you already loaded it at startup — can skip this line if needed
     if (!blocks[block] || blocks[block].length === 0) {
       updateScreen(`<h2>⚠️ No trials found in ${BLOCK_FILES[block]}. Please check your CSV.</h2>`);
       return;
