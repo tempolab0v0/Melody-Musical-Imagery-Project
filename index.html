@@ -668,6 +668,7 @@ function hideAll() {
 }
   
 async function playTrial() {
+  console.log('playTrial called');
   document.getElementById("trialControls").innerHTML = "";
   updateScreen("");
   hideAll();
@@ -676,6 +677,7 @@ async function playTrial() {
   const trial = blocks[block][trialCounter - 1];
   if (!trial) {
     updateScreen(`<h2>Error: No trial data found. Please check your CSV and block setup.</h2>`);
+    console.error('No trial data found for block', block, 'trialCounter', trialCounter);
     return;
   }
 
@@ -689,6 +691,15 @@ async function playTrial() {
   currentAudioFile = filename;
 
   const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
+
+  // Wait for all videos to have metadata loaded
+  await Promise.all([
+    new Promise(res => { if (v1.readyState >= 1) res(); else v1.onloadedmetadata = res; }),
+    new Promise(res => { if (vGap.readyState >= 1) res(); else vGap.onloadedmetadata = res; }),
+    new Promise(res => { if (v2.readyState >= 1) res(); else v2.onloadedmetadata = res; })
+  ]);
+
+  // Prime videos
   await Promise.all([
     v1.play().then(() => v1.pause()),
     vGap.play().then(() => vGap.pause()),
@@ -698,6 +709,12 @@ async function playTrial() {
   const video1Sec = v1.duration;
   const gapVideoSec = vGap.duration;
   const video2Sec = v2.duration;
+
+  if (isNaN(video1Sec) || isNaN(gapVideoSec) || isNaN(video2Sec)) {
+    console.warn('One or more video durations are NaN:', {video1Sec, gapVideoSec, video2Sec});
+    updateScreen('<h2>Error: Video files not loaded properly. Please check your video files and try again.</h2>');
+    return;
+  }
 
   const preStillSec = Math.max(0, originalSec - video1Sec);
   const gapStillSec = Math.max(0, gapSec - gapVideoSec);
@@ -718,7 +735,6 @@ async function playTrial() {
 
   function updateVisuals() {
     const time = audio.currentTime;
-
     for (const v of visuals) {
       if (time >= v.start && time < v.end) {
         if (currentVisual !== v.el) {
@@ -730,7 +746,6 @@ async function playTrial() {
         break;
       }
     }
-
     if (time < visuals[visuals.length - 1].end) {
       requestAnimationFrame(updateVisuals);
     } else {
@@ -740,11 +755,16 @@ async function playTrial() {
   }
 
   try {
+    console.log('Attempting to play audio:', audio.src);
     await audio.play();
+    console.log('Audio playback started');
     updateVisuals(); // begin visual sequence
   } catch (err) {
-    console.warn("Audio autoplay blocked:", err);
+    console.warn("Audio autoplay blocked or failed:", err);
     showAutoplayOverlay(audio, updateVisuals);
+    // Make overlay more obvious
+    const overlay = document.getElementById("overlay");
+    overlay.innerHTML += '<div style="color:red;font-size:1.5em;margin-top:20px;">Audio playback was blocked. Please click the button above to start the trial.</div>';
   }
 }
 
