@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -65,14 +66,11 @@
     .btn-primary:hover{transform:scale(1.05); box-shadow:0 6px 18px rgba(75,46,131,.4);}
     .tempo-btn,.elevator-option{cursor:pointer; transition:transform .2s;}
     .tempo-btn:hover,.elevator-option:hover{transform:scale(1.05);}
-    #progressWrapper{position:fixed;top:0;left:0;width:100%;height:20px;background:#eee;}
-    #progressBar{height:100%;width:0;background:#4b2e83;transition:width .3s;}
   </style>
 </head>
 
 <body>
   <div id="overlay" style="display:none;"></div>
-  <div id="progressWrapper"><div id="progressBar"></div></div>
   <div id="visual-container">
     <div id="screen"></div>
     <img class="media-content" id="stillframe1" src="stillframe1.png"/>
@@ -91,16 +89,6 @@
 const TRIALS_PER_BLOCK=2;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
-const TOTAL_TRIALS = TRIALS_PER_BLOCK * BLOCK_ORDER.length;
-const ANIMAL_INTERVAL = 2;
-const ANIMALS = [
-  {name:"Tiger", image:"tiger.png"},
-  {name:"Lion", image:"lion.png"},
-  {name:"Penguin", image:"penguin.png"},
-  {name:"Monkey", image:"monkey.png"},
-  {name:"Elephant", image:"elephant.png"},
-  {name:"Parrot", image:"parrot.png"}
-];
 
 let pitchPracticeCompleted = false;
 
@@ -113,7 +101,6 @@ let currentAudioFile="";
 let responseSubmitted=false;
 let trialStartTime=null;
 const visuals=[];
-let completedTrials=0;
 
 window.onload = async () => {
   while (!participantID) {
@@ -845,24 +832,13 @@ function handleResponse(choice) {
       currentBlockIndex++;
     }
 
-    completedTrials++;
-    updateProgress();
-
-    const proceed = () => {
-      if (currentBlockIndex >= BLOCK_ORDER.length) {
-        showParty();
-      } else if (BLOCK_ORDER[currentBlockIndex] === "pitch" && !pitchPracticeCompleted) {
-        runPitchDemo();
-      } else {
-        rebuildBaseHTML();
-        updatePlayButton();
-      }
-    };
-
-    if (completedTrials % ANIMAL_INTERVAL === 0) {
-      showAnimalScreen(proceed);
+    if (currentBlockIndex >= BLOCK_ORDER.length) {
+      updateScreen(`<h1>Thank you for participating! All trials complete.</h1>`);
+    } else if (BLOCK_ORDER[currentBlockIndex] === "pitch" && !pitchPracticeCompleted) {
+      runPitchDemo(); // Only run pitch practice the first time
     } else {
-      proceed();
+     rebuildBaseHTML();
+      updatePlayButton();
     }
   })
   .catch(() => {
@@ -870,36 +846,7 @@ function handleResponse(choice) {
     responseSubmitted = false;
   });
 }
-
-function updateProgress() {
-  const percent = (completedTrials / TOTAL_TRIALS) * 100;
-  document.getElementById("progressBar").style.width = percent + "%";
-}
-
-function showAnimalScreen(callback) {
-  const index = Math.min(Math.floor(completedTrials / ANIMAL_INTERVAL) - 1, ANIMALS.length - 1);
-  const animal = ANIMALS[index];
-  updateScreen(`
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:20px;">
-      <img src="${animal.image}" alt="${animal.name}" style="max-width:40%;height:auto;margin-bottom:20px;"/>
-      <h2>You met a ${animal.name}!</h2>
-      <button id="continueAnimal" class="btn-primary" style="margin-top:20px;">Continue</button>
-    </div>
-  `);
-  document.getElementById("continueAnimal").addEventListener("click", callback);
-}
-
-function showParty() {
-  updateScreen(`
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:20px;">
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:20px;">
-        ${ANIMALS.map(a => `<img src="${a.image}" alt="${a.name}" style="width:120px;height:auto;"/>`).join('')}
-      </div>
-      <h1 style="color:#4b2e83;">Great job! It's party time!</h1>
-    </div>
-  `);
-}
-function rebuildBaseHTML() {
+function rebuildBaseHTML() { 
   updateScreen("");
   document.getElementById("trialControls").innerHTML="";
   responseSubmitted=false;
@@ -909,6 +856,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
