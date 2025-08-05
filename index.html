@@ -673,7 +673,10 @@ async function startRealTrials() {
     updateScreen(`<h2>⚠️ Failed to load block: ${block}<br>${err.message}</h2>`);
     return;
   }
-
+if (!progressInitialized) {
+    initProgress();
+    progressInitialized = true;
+  }
   rebuildBaseHTML();
   updatePlayButton();
 }
@@ -890,7 +893,7 @@ function handleResponse(choice) {
       currentBlockIndex++;
     }
 
- progressFloor++;
+   progressFloor++;
     if (!progressInitialized) {
       initProgress();
       progressInitialized = true;
@@ -977,6 +980,7 @@ function showPartyScreen() {
   </script>
 </body>
 </html>
+
 
 
 
