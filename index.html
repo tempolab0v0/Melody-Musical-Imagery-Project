@@ -65,8 +65,7 @@
     .btn-primary:hover{transform:scale(1.05); box-shadow:0 6px 18px rgba(75,46,131,.4);}
     .tempo-btn,.elevator-option{cursor:pointer; transition:transform .2s;}
     .tempo-btn:hover,.elevator-option:hover{transform:scale(1.05);}
-
-   /* --- Progress Tracker Styles --- */
+    /* --- Progress Tracker Styles --- */
 #progressContainer {
   display: flex;
   justify-content: center;
@@ -662,8 +661,7 @@ function showRealTrialsIntro() {
 }
 
 async function startRealTrials() {
-  const block = BLOCK_ORDER[currentBlockIndex]; // <-- don't override here
-
+  const block = BLOCK_ORDER[currentBlockIndex];
   try {
     if (!blocks[block] || blocks[block].length === 0) {
       updateScreen(`<h2>⚠️ No trials found in ${BLOCK_FILES[block]}. Please check your CSV.</h2>`);
@@ -673,7 +671,8 @@ async function startRealTrials() {
     updateScreen(`<h2>⚠️ Failed to load block: ${block}<br>${err.message}</h2>`);
     return;
   }
-if (!progressInitialized) {
+  // Initialize progress bar and animal logic at the start of real trials
+  if (!progressInitialized) {
     initProgress();
     progressInitialized = true;
   }
@@ -861,14 +860,11 @@ function showResponseOptions() {
 function handleResponse(choice) {
   if (responseSubmitted) return;
   responseSubmitted = true;
-
   const imgs = document.querySelectorAll('.elevator-option');
   imgs.forEach(img => img.style.pointerEvents = 'none');
-
   const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
   const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
   const correctAnswer = isNormal ? "normal" : "magical";
-
   const entry = {
     participant: participantID,
     session: sessionID,
@@ -880,7 +876,6 @@ function handleResponse(choice) {
     correct_answer: correctAnswer,
     reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
   };
-
   fetch("https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -892,13 +887,16 @@ function handleResponse(choice) {
       trialCounter = 1;
       currentBlockIndex++;
     }
-
-   progressFloor++;
+    // Always show and update progress bar before animal reveal
+    progressFloor++;
     if (!progressInitialized) {
       initProgress();
       progressInitialized = true;
     }
     updateProgress(progressFloor);
+    document.getElementById('progressContainer').style.display = 'flex';
+    // Reveal animal every 2nd trial (or adjust as needed)
+    const showAnimal = (progressFloor % 2 === 0 && (progressFloor / 2 - 1) < animals.length);
     const proceed = () => {
       if (currentBlockIndex >= BLOCK_ORDER.length) {
         showPartyScreen();
@@ -909,8 +907,7 @@ function handleResponse(choice) {
         updatePlayButton();
       }
     };
-    // Reveal animal every 2nd trial (or adjust as needed)
-    if (progressFloor % 2 === 0 && progressFloor / 2 - 1 < animals.length) {
+    if (showAnimal) {
       showAnimalReveal(progressFloor / 2 - 1, proceed);
     } else {
       proceed();
@@ -922,7 +919,7 @@ function handleResponse(choice) {
   });
 }
 
-  // Progress Tracker and Animal Reveal functions
+// Progress Tracker and Animal Reveal functions
 // Add progress bar container if not present
 if (!document.getElementById('progressContainer')) {
   const progressDiv = document.createElement('div');
@@ -967,6 +964,7 @@ function showAnimalReveal(index, next) {
     </div>`);
   document.getElementById('nextAnimal').addEventListener('click', next);
 }
+
 function showPartyScreen() {
   const animalsHtml = collectedAnimals.map(img => `<img src="${img}" style="max-width:120px;max-height:120px;margin:0 10px;" />`).join('');
   updateScreen(`
