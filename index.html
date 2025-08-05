@@ -65,50 +65,6 @@
     .btn-primary:hover{transform:scale(1.05); box-shadow:0 6px 18px rgba(75,46,131,.4);}
     .tempo-btn,.elevator-option{cursor:pointer; transition:transform .2s;}
     .tempo-btn:hover,.elevator-option:hover{transform:scale(1.05);}
-    /* --- Progress Tracker Styles --- */
-#progressContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2000;
-  width: 90%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.floor {
-  width: 100%;
-  height: 10px;
-  background: #e0e0e0;
-  margin: 2px 0;
-  border-radius: 5px;
-  position: relative;
-  overflow: hidden;
-}
-
-.floor.active {
-  background: #4caf50;
-}
-
-.animal-img {
-  max-width: 120px;
-  max-height: 120px;
-  margin: 0 10px;
-  transition: transform 0.3s;
-}
-
-.animal-img:hover {
-  transform: scale(1.1);
-}
   </style>
 </head>
 
@@ -144,20 +100,6 @@ let currentAudioFile="";
 let responseSubmitted=false;
 let trialStartTime=null;
 const visuals=[];
-
-// --- Progress Tracker and Animal Party ---
-const animals = [
-  { img: "tiger.png", name: "Tiger", msg: "Tara the Tiger pounces in!" },
-  { img: "lion.png", name: "Lion", msg: "Leo the Lion roars hello!" },
-  { img: "elephant.png", name: "Elephant", msg: "Ella the Elephant stomps in!" },
-  { img: "parrot.png", name: "Parrot", msg: "Polly the Parrot squawks hello!" },
-  { img: "penguin.png", name: "Penguin", msg: "Penny the Penguin slides in!" },
-  { img: "monkey.png", name: "Monkey", msg: "Max the Monkey swings by!" }
-];
-let collectedAnimals = [];
-let progressFloor = 0;
-const totalFloors = TRIALS_PER_BLOCK * BLOCK_ORDER.length;
-let progressInitialized = false;
 
 window.onload = async () => {
   while (!participantID) {
@@ -661,7 +603,8 @@ function showRealTrialsIntro() {
 }
 
 async function startRealTrials() {
-  const block = BLOCK_ORDER[currentBlockIndex];
+  const block = BLOCK_ORDER[currentBlockIndex]; // <-- don't override here
+
   try {
     if (!blocks[block] || blocks[block].length === 0) {
       updateScreen(`<h2>⚠️ No trials found in ${BLOCK_FILES[block]}. Please check your CSV.</h2>`);
@@ -671,11 +614,7 @@ async function startRealTrials() {
     updateScreen(`<h2>⚠️ Failed to load block: ${block}<br>${err.message}</h2>`);
     return;
   }
-  // Initialize progress bar and animal logic at the start of real trials
-  if (!progressInitialized) {
-    initProgress();
-    progressInitialized = true;
-  }
+
   rebuildBaseHTML();
   updatePlayButton();
 }
@@ -860,11 +799,14 @@ function showResponseOptions() {
 function handleResponse(choice) {
   if (responseSubmitted) return;
   responseSubmitted = true;
+
   const imgs = document.querySelectorAll('.elevator-option');
   imgs.forEach(img => img.style.pointerEvents = 'none');
+
   const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
   const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
   const correctAnswer = isNormal ? "normal" : "magical";
+
   const entry = {
     participant: participantID,
     session: sessionID,
@@ -876,6 +818,7 @@ function handleResponse(choice) {
     correct_answer: correctAnswer,
     reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
   };
+
   fetch("https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -887,30 +830,14 @@ function handleResponse(choice) {
       trialCounter = 1;
       currentBlockIndex++;
     }
-    // Always show and update progress bar before animal reveal
-    progressFloor++;
-    if (!progressInitialized) {
-      initProgress();
-      progressInitialized = true;
-    }
-    updateProgress(progressFloor);
-    document.getElementById('progressContainer').style.display = 'flex';
-    // Reveal animal every 2nd trial (or adjust as needed)
-    const showAnimal = (progressFloor % 2 === 0 && (progressFloor / 2 - 1) < animals.length);
-    const proceed = () => {
-      if (currentBlockIndex >= BLOCK_ORDER.length) {
-        showPartyScreen();
-      } else if (BLOCK_ORDER[currentBlockIndex] === "pitch" && !pitchPracticeCompleted) {
-        runPitchDemo();
-      } else {
-        rebuildBaseHTML();
-        updatePlayButton();
-      }
-    };
-    if (showAnimal) {
-      showAnimalReveal(progressFloor / 2 - 1, proceed);
+
+    if (currentBlockIndex >= BLOCK_ORDER.length) {
+      updateScreen(`<h1>Thank you for participating! All trials complete.</h1>`);
+    } else if (BLOCK_ORDER[currentBlockIndex] === "pitch" && !pitchPracticeCompleted) {
+      runPitchDemo(); // Only run pitch practice the first time
     } else {
-      proceed();
+     rebuildBaseHTML();
+      updatePlayButton();
     }
   })
   .catch(() => {
@@ -918,66 +845,17 @@ function handleResponse(choice) {
     responseSubmitted = false;
   });
 }
-
-// Progress Tracker and Animal Reveal functions
-// Add progress bar container if not present
-if (!document.getElementById('progressContainer')) {
-  const progressDiv = document.createElement('div');
-  progressDiv.id = 'progressContainer';
-  progressDiv.style.display = 'none';
-  document.body.insertBefore(progressDiv, document.body.firstChild.nextSibling);
+function rebuildBaseHTML() { 
+  updateScreen("");
+  document.getElementById("trialControls").innerHTML="";
+  responseSubmitted=false;
+  setupVisualElements();
 }
-
-function initProgress() {
-  const container = document.getElementById('progressContainer');
-  container.innerHTML = '';
-  for (let i = 1; i <= totalFloors; i++) {
-    const d = document.createElement('div');
-    d.className = 'floor';
-    d.textContent = i;
-    container.appendChild(d);
-  }
-  container.style.display = 'flex';
-  updateProgress(0);
-}
-
-function updateProgress(floor) {
-  const nodes = document.querySelectorAll('#progressContainer .floor');
-  nodes.forEach(function(n, idx) {
-    if (idx < floor) {
-      n.classList.add('active');
-    } else {
-      n.classList.remove('active');
-    }
-  });
-}
-
-function showAnimalReveal(index, next) {
-  if (index >= animals.length) { next(); return; }
-  const animal = animals[index];
-  collectedAnimals.push(animal.img);
-  updateScreen(`
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:20px;">
-      <img src="${animal.img}" alt="${animal.name}" style="max-width:200px;max-height:200px;" />
-      <p style="font-size:1.5em">${animal.msg}</p>
-      <button id="nextAnimal" class="btn-primary">Next</button>
-    </div>`);
-  document.getElementById('nextAnimal').addEventListener('click', next);
-}
-
-function showPartyScreen() {
-  const animalsHtml = collectedAnimals.map(img => `<img src="${img}" style="max-width:120px;max-height:120px;margin:0 10px;" />`).join('');
-  updateScreen(`
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:20px;">
-      <h1 style="color:#4b2e83">Animal Disco Party!</h1>
-      <div style="display:flex;justify-content:center;align-items:end;">${animalsHtml}</div>
-      <p style="font-size:1.2em">You collected all the animals!</p>
-      <img src="party.gif" alt="Party" style="max-width:200px;margin-top:20px;" />
-    </div>`);
-}
-  </script>
+setupVisualElements();
+</script>
 </body>
 </html>
+
 
 
 
