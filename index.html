@@ -44,6 +44,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+  background:#fff;
 }
     #overlay{
       position:fixed; inset:0;
@@ -92,14 +93,15 @@ const TRIALS_PER_BLOCK=2;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
 const TOTAL_TRIALS = TRIALS_PER_BLOCK * BLOCK_ORDER.length;
-const ANIMAL_INTERVAL = 2;
+const ANIMALS_PER_BLOCK = 3;
+const ANIMAL_INTERVAL = Math.ceil(TRIALS_PER_BLOCK / ANIMALS_PER_BLOCK);
 const ANIMALS = [
-  {name:"Tiger", image:"tiger.png"},
-  {name:"Lion", image:"lion.png"},
-  {name:"Penguin", image:"penguin.png"},
-  {name:"Monkey", image:"monkey.png"},
-  {name:"Elephant", image:"elephant.png"},
-  {name:"Parrot", image:"parrot.png"}
+  {name:"Tiger", image:"tiger.png", action:"Roar like a tiger 3 times!"},
+  {name:"Lion", image:"lion.png", action:"Stretch tall like a lion!"},
+  {name:"Penguin", image:"penguin.png", action:"Waddle like a penguin for 5 seconds!"},
+  {name:"Monkey", image:"monkey.png", action:"Scratch like a silly monkey!"},
+  {name:"Elephant", image:"elephant.png", action:"Stomp like an elephant 5 times!"},
+  {name:"Parrot", image:"parrot.png", action:"Flap your wings like a parrot!"}
 ];
 
 let pitchPracticeCompleted = false;
@@ -186,13 +188,13 @@ function showIntroScreen() {
 }
 
 function showIntroVideo() {
-  updateScreen(`
-    <div style="display:flex;justify-content:center;align-items:center;height:100%;background:black;">
-      <video id="introVideo" width="100%" height="100%" playsinline muted style="max-width:100%;max-height:100%;">
-        <source src="intro_video.mp4" type="video/mp4" />
-      </video>
-      <audio id="introNarration2" src="intro_narration2.mp3"></audio>
-    </div>
+  updateScreen(`␊
+    <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;">
+      <video id="introVideo" width="100%" height="100%" playsinline muted style="max-width:100%;max-height:100%;background:white;">
+        <source src="intro_video.mp4" type="video/mp4" />␊
+      </video>␊
+      <audio id="introNarration2" src="intro_narration2.mp3"></audio>␊
+    </div>␊
   `);
 
   const video = document.getElementById("introVideo");
@@ -269,7 +271,7 @@ function showFastIntro() {
 
 function playFastVideo() {
   updateScreen(`
-    <video id="fastVideo" width="100%" height="100%" playsinline style="background:black;">
+    <video id="fastVideo" width="100%" height="100%" playsinline style="background:white;">
       <source src="PT_FAST1.mp4" type="video/mp4" />
     </video>
   `);
@@ -302,7 +304,7 @@ function showSlowIntro() {
 
 function playSlowVideo() {
   updateScreen(`
-    <video id="slowVideo" width="100%" height="100%" playsinline style="background:black;">
+    <video id="slowVideo" width="100%" height="100%" playsinline style="background:white;">
       <source src="PT_SLOW1.mp4" type="video/mp4" />
     </video>
   `);
@@ -360,8 +362,8 @@ function runTempoPractice() {
 
 function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
   updateScreen(`
-    <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#cce0dd;">
-      <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:#cce0dd;">
+    <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:white;">
+      <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:white;">
         <source src="${videoFile}" type="video/mp4">
       </video>
     </div>
@@ -382,7 +384,7 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
 function showTempoResponseScreen(correctAnswer, callback) {
   updateScreen(`
 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
-    background: url('/mnt/data/0372e1b1-84c0-4ecf-9841-fbaf1a4be76c.png') center/cover no-repeat;
+    background: white;
     padding: 20px;">
       <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
       <div style="display: flex; gap: 40px; margin-top: 20px;">
@@ -456,7 +458,7 @@ function runPitchDemo() {
 
 function playPitchDemoVideo(videoFile, callback) {
   updateScreen(`
-    <video id="demoVideo" width="100%" height="100%" playsinline style="background:black;">
+    <video id="demoVideo" width="100%" height="100%" playsinline style="background:white;">
       <source src="${videoFile}" type="video/mp4" />
     </video>
   `);
@@ -484,8 +486,8 @@ function runPitchPractice() {
 }
 function playPitchPracticeVideo(videoFile, correctAnswer, callback) {
   updateScreen(`
-    <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#f0e6f9;">
-      <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:#f0e6f9;">
+    <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:white;">
+      <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:white;">
         <source src="${videoFile}" type="video/mp4">
       </video>
     </div>
@@ -503,7 +505,7 @@ function playPitchPracticeVideo(videoFile, correctAnswer, callback) {
 function showPitchResponseScreen(correctAnswer, callback) {
   updateScreen(`
 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
-    background: url('/mnt/data/0372e1b1-84c0-4ecf-9841-fbaf1a4be76c.png') center/cover no-repeat;
+    background: white;
     padding: 20px;">
       <h1 style="color: #4b2e83; margin-top: 30px;">How did the pitch sound?</h1>
       <div style="display: flex; gap: 40px; margin-top: 20px;">
@@ -554,7 +556,7 @@ function showPitchResponseScreen(correctAnswer, callback) {
           After each clip, decide whether the pitch got <strong>higher</strong>, <strong>lower</strong>, or stayed <strong>the same</strong>! <br>
           When you're ready, we'll start the real trials!
         </p>
-        <audio id="pitchInstructions" src="PITCH_INSTRUCTIONS.mp3"></audio>
+        <audio id="pitchInstructions" src="PT_PITCH_INSTRUCTIONS.mp3"></audio>
       </div>
     `);
 
@@ -582,7 +584,7 @@ function showPitchResponseScreen(correctAnswer, callback) {
 function showRealTrialsIntro() {
   updateScreen(`
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;
-      background: url('/mnt/data/0372e1b1-84c0-4ecf-9841-fbaf1a4be76c.png') center/cover no-repeat;
+      background: white;
       padding:40px;box-sizing:border-box;">
       <h1 style="color:#4b2e83; font-size:2em; margin-bottom:20px;">Amazing work!</h1>
       <p style="max-width:800px; font-size:1.3em; text-align:center; line-height:1.6; margin-bottom:20px;">
@@ -627,7 +629,10 @@ async function startRealTrials() {
   } catch (err) {
     updateScreen(`<h2>⚠️ Failed to load block: ${block}<br>${err.message}</h2>`);
     return;
-  }
+ }
+
+  trialsInCurrentBlock = 0;
+  animalsShownInBlock = 0;
 
   rebuildBaseHTML();
   updatePlayButton();
@@ -789,7 +794,7 @@ async function playTrial() {
   
 function showResponseOptions() {
   updateScreen(`
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: white;">
       <h1 style="color: #4b2e83;">Which elevator did Melody ride?</h1>
       <p style="max-width:600px;font-size:1.1em;margin-bottom:30px;">
         Now that the music is over, think back to how it sounded before and after the pause.<br><br>
@@ -839,6 +844,7 @@ function handleResponse(choice) {
     body: JSON.stringify(entry)
   })
   .then(() => {
+    trialsInCurrentBlock++;
     trialCounter++;
     if (trialCounter > TRIALS_PER_BLOCK) {
       trialCounter = 1;
@@ -847,6 +853,8 @@ function handleResponse(choice) {
 
     completedTrials++;
     updateProgress();
+
+    const showAnimal = (trialsInCurrentBlock % ANIMAL_INTERVAL === 0) && (animalsShownInBlock < ANIMALS_PER_BLOCK);
 
     const proceed = () => {
       if (currentBlockIndex >= BLOCK_ORDER.length) {
@@ -859,7 +867,8 @@ function handleResponse(choice) {
       }
     };
 
-    if (completedTrials % ANIMAL_INTERVAL === 0) {
+    if (showAnimal) {
+      animalsShownInBlock++;
       showAnimalScreen(proceed);
     } else {
       proceed();
@@ -877,18 +886,19 @@ function updateProgress() {
 }
 
 function showAnimalScreen(callback) {
-  const index = Math.min(Math.floor(completedTrials / ANIMAL_INTERVAL) - 1, ANIMALS.length - 1);
-  const animal = ANIMALS[index];
+  const animal = ANIMALS[animalIndex % ANIMALS.length];
+  animalIndex++;
   updateScreen(`
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:20px;">
       <img src="${animal.image}" alt="${animal.name}" style="max-width:40%;height:auto;margin-bottom:20px;"/>
       <h2>You met a ${animal.name}!</h2>
+      <p style="margin-top:10px;font-size:1.2em;">${animal.action}</p>
       <button id="continueAnimal" class="btn-primary" style="margin-top:20px;">Continue</button>
     </div>
   `);
   document.getElementById("continueAnimal").addEventListener("click", callback);
 }
-
+  
 function showParty() {
   updateScreen(`
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:20px;">
@@ -909,6 +919,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
