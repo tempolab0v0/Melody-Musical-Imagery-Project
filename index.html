@@ -98,10 +98,10 @@ const ANIMAL_INTERVAL = Math.ceil(TRIALS_PER_BLOCK / ANIMALS_PER_BLOCK);
 const ANIMALS = [
   {name:"Tiger", image:"tiger.png", action:"Roar like a tiger 3 times!"},
   {name:"Lion", image:"lion.png", action:"Stretch tall like a lion!"},
-  {name:"Penguin", image:"penguin.png", action:"Waddle like a penguin for 5 seconds!"},
-  {name:"Monkey", image:"monkey.png", action:"Scratch like a silly monkey!"},
-  {name:"Elephant", image:"elephant.png", action:"Stomp like an elephant 5 times!"},
-  {name:"Parrot", image:"parrot.png", action:"Flap your wings like a parrot!"}
+  {name:"Penguin", image:"penguin.png", action:"Waddle and flap like a penguin for 5 seconds!"},
+  {name:"Monkey", image:"monkey.png", action:"Scratch and giggle like a silly monkey!"},
+  {name:"Elephant", image:"elephant.png", action:"Stomp your feet like an elephant 5 times!"},
+  {name:"Parrot", image:"parrot.png", action:"Flap your wings and squawk like a parrot!"}
 ];
 
 let pitchPracticeCompleted = false;
@@ -167,8 +167,8 @@ function showIntroScreen() {
           Hi there!<br>
           My name is Melody, and I love music!<br>
           Every day, I ride a musical elevator to get to music class.<br>
-          But today, something strange is happening...
-        </p>
+          But today the elevator is full of surprises, and we might even meet some animal friends!<br>
+          Will you help me figure out what's going on?        </p>
         <button id="continueIntro" class="btn-primary" style="margin-top:30px;font-size:1em;">Click to Play</button>
         <audio id="introAudio" src="intro_narration.mp3"></audio>
       </div>
@@ -193,8 +193,8 @@ function showIntroVideo() {
   updateScreen(`␊
     <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;">
       <video id="introVideo" width="100%" height="100%" playsinline muted style="max-width:100%;max-height:100%;background:white;">
-        <source src="intro_video.mp4" type="video/mp4" />␊
-      </video>␊
+        <source src="intro_video.mp4" type="video/mp4" />
+      </video>
       <audio id="introNarration2" src="intro_narration2.mp3"></audio>␊
     </div>␊
   `);
@@ -222,9 +222,10 @@ function showNarrationScreen() {
       </div>
       <div style="flex:1;text-align:center;padding:30px;">
         <p style="font-size:1.3em;line-height:1.8;">
-          The magical elevator can do all sorts of silly things to the music!<br>
-          Sometimes it makes the music go faster or slower...<br>
-          Other times, the music sounds higher or lower than before!<br><br>
+         The magical elevator can do all sorts of silly things to the music!<br>
+          Sometimes it makes the music go faster or slower.<br>
+          Other times the notes jump higher or sink lower.<br>
+          And when the doors open we might meet an animal pal with a fun move to try!<br><br>
           Let’s practice together so you know what to listen for!
         </p>
         <button id="playNarration" class="btn-primary" style="margin-top:20px;font-size:1em;">Click to Play</button>
@@ -555,7 +556,7 @@ function showPitchResponseScreen(correctAnswer, callback) {
       <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
         <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
           Great! Now it's your turn!<br><br>
-          After each clip, decide whether the pitch got <strong>higher</strong>, <strong>lower</strong>, or stayed <strong>the same</strong>! <br>
+          After each clip, decide whether the pitch went <strong>higher</strong>, <strong>lower</strong>, or stayed <strong>the same</strong>! <br>
           When you're ready, we'll start the real trials!
         </p>
         <audio id="pitchInstructions" src="PT_PITCH_INSTRUCTIONS.mp3"></audio>
@@ -593,6 +594,7 @@ function showRealTrialsIntro() {
         Now the real trials begin!<br><br>
         If the music changes and sounds faster or slower, choose the <strong>magical</strong> elevator.<br>
         If it stays the same, choose the <strong>normal</strong> elevator. <br><br>
+        Between some rides, animal friends may pop in with a quick activity, so be ready!<br><br>
         Listen carefully, and good luck!
       </p>
       <audio id="realInstructionsAudio" src="real_trials_instructions.mp3"></audio>
@@ -893,8 +895,8 @@ function showAnimalScreen(callback) {
   updateScreen(`
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:20px;">
       <img src="${animal.image}" alt="${animal.name}" style="max-width:40%;height:auto;margin-bottom:20px;"/>
-      <h2>You met a ${animal.name}!</h2>
-      <p style="margin-top:10px;font-size:1.2em;">${animal.action}</p>
+      <h2>Ding! We stopped at the ${animal.name}'s floor!</h2>
+      <p style="margin-top:10px;font-size:1.2em;">${animal.action} Then click Continue to ride again.</p>
       <button id="continueAnimal" class="btn-primary" style="margin-top:20px;">Continue</button>
     </div>
   `);
@@ -921,6 +923,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
