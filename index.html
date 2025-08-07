@@ -254,8 +254,7 @@ function showFastIntro() {
   updateScreen(`
     <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
       <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
-        First, we’re going to learn about tempo.<br>
-        Tempo is how fast or slow the music goes.<br><br>
+       First, we’re going to learn how the magical elevator makes music sound faster or slower.<br>
         Ready?<br>
         Listen to this song and pay attention to how the music changes to become faster when Melody rides the elevator to the second floor.
       </p>
@@ -429,46 +428,68 @@ function showTempoResponseScreen(correctAnswer, callback) {
   });
 }
 
-function runPitchDemo() {
-  const demoTrials = [
-    { narration: "PT_HIGH1_NARRATION.mp3", video: "PT_HIGH1.mp4" },
-    { narration: "PT_LOW1_NARRATION.mp3", video: "PT_LOW1.mp4" }
-  ];
-  let i = 0;
+  function runPitchDemo() {
+  updateScreen(`
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
+      <p style="font-size:1.5em;line-height:1.6;max-width:800px;text-align:center;">
+        <strong>6. Pitch Practice Trials</strong><br><br>
+        Now, the magical elevator is going to change how high or low the music sounds.<br>
+        Ready? Listen to this song and see how the music gets higher when Melody rides the elevator up to the 2nd floor.
+      </p>
+      <button id="playHighDemo" class="btn-primary" style="margin-top:20px;">Play</button>
+    </div>
+  `);
 
-  function nextDemo() {
-    if (i >= demoTrials.length) {
-      runPitchPractice(); // → next: feedback trials
-      return;
-    }
+  document.getElementById("playHighDemo").addEventListener("click", playHighDemo);
 
-    const trial = demoTrials[i++];
+  function playHighDemo() {
     updateScreen(`
-      <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;">
-        <p style="font-size:1.5em;text-align:center;max-width:800px;">Listen carefully to this example!</p>
-        <audio id="demoNarration" src="${trial.narration}"></audio>
-      </div>
+      <video id="highDemo" width="100%" height="100%" playsinline style="background:white;">
+        <source src="PT_HIGH1.mp4" type="video/mp4" />
+      </video>
     `);
-
-    const audio = document.getElementById("demoNarration");
-    audio.play().then(() => {
-      audio.onended = () => playPitchDemoVideo(trial.video, nextDemo);
-    }).catch(() => playPitchDemoVideo(trial.video, nextDemo));
+    const video = document.getElementById("highDemo");
+    video.play().catch(() => {});
+    video.onended = showLowText;
   }
 
-  nextDemo();
+  function showLowText() {
+    updateScreen(`
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
+        <p style="font-size:1.5em;line-height:1.6;max-width:800px;text-align:center;">
+          That was super high!<br><br>
+          Let’s try another, but this time, the notes will go lower.
+        </p>
+        <button id="playLowDemo" class="btn-primary" style="margin-top:20px;">Play</button>
+      </div>
+    `);
+    document.getElementById("playLowDemo").addEventListener("click", playLowDemo);
+  }
+
+  function playLowDemo() {
+    updateScreen(`
+      <video id="lowDemo" width="100%" height="100%" playsinline style="background:white;">
+        <source src="PT_LOW1.mp4" type="video/mp4" />
+      </video>
+    `);
+    const video = document.getElementById("lowDemo");
+    video.play().catch(() => {});
+    video.onended = showFinalText;
+  }
+
+  function showFinalText() {
+    updateScreen(`
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
+        <p style="font-size:1.5em;line-height:1.6;max-width:800px;text-align:center;">
+          Now, it’s your turn! Choose whether the music got higher, lower or stayed the same after the next rounds play.
+        </p>
+        <button id="startPitchPractice" class="btn-primary" style="margin-top:20px;">Start Practice</button>
+      </div>
+    `);
+    document.getElementById("startPitchPractice").addEventListener("click", runPitchPractice);
+  }
 }
 
-function playPitchDemoVideo(videoFile, callback) {
-  updateScreen(`
-    <video id="demoVideo" width="100%" height="100%" playsinline style="background:white;">
-      <source src="${videoFile}" type="video/mp4" />
-    </video>
-  `);
-  const video = document.getElementById("demoVideo");
-  video.play().catch(() => {});
-  video.onended = callback;
-}
 function runPitchPractice() {
   const pitchPracticeTrials = [
     { video: "PT_HIGH2.mp4", correct: "high" },
@@ -555,9 +576,13 @@ function showPitchResponseScreen(correctAnswer, callback) {
     updateScreen(`
       <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
         <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
-          Great! Now it's your turn!<br><br>
-          After each clip, decide whether the pitch went <strong>higher</strong>, <strong>lower</strong>, or stayed <strong>the same</strong>! <br>
-          When you're ready, we'll start the real trials!
+          I need your help! This time, when I get in the elevator you will stay outside. When the door closes,  you won’t hear the song anymore even though it will keep playing in the elevator for me. Keep singing the song in your head so that when the elevator gets to the next floor and the doors open up, you can tell me if I was in the normal elevator or the magical one. <br><br>
+If the music stayed the same, that was a normal elevator.<br>
+But if the pitch of the music changed, then Melody must have ridden the magical elevator! <br>
+So listen carefully, and keep the music playing in your head.<br>
+Then, choose which elevator I rode: the normal one, or the magical one!<br>
+ Are you ready?<br>
+ Let’s go!
         </p>
         <audio id="pitchInstructions" src="PT_PITCH_INSTRUCTIONS.mp3"></audio>
       </div>
@@ -567,7 +592,7 @@ function showPitchResponseScreen(correctAnswer, callback) {
     audio.play().then(() => {
       audio.onended = () => setTimeout(() => {
         pitchPracticeCompleted = true;
-        currentBlockIndex = 1; // 👈 Ensure pitch block is set
+        currentBlockIndex = 1;
         trialCounter = 1;
         startRealTrials();
       }, 1000);
@@ -591,11 +616,16 @@ function showRealTrialsIntro() {
       padding:40px;box-sizing:border-box;">
       <h1 style="color:#4b2e83; font-size:2em; margin-bottom:20px;">Amazing work!</h1>
       <p style="max-width:800px; font-size:1.3em; text-align:center; line-height:1.6; margin-bottom:20px;">
-        Now the real trials begin!<br><br>
-        If the music changes and sounds faster or slower, choose the <strong>magical</strong> elevator.<br>
-        If it stays the same, choose the <strong>normal</strong> elevator. <br><br>
-        Between some rides, animal friends may pop in with a quick activity, so be ready!<br><br>
-        Listen carefully, and good luck!
+        I need your help! This time, when I get in the elevator you will stay outside. When the door closes,  <br>
+you won’t hear the song anymore even though it will keep playing in the elevator for me. Keep singing the song in your head <br>
+so that when the elevator gets to the next floor and the doors open up, you can tell me if I was in the normal elevator or the magical one. <br>
+If the music stayed the same, that was a normal elevator. <br>
+But if the speed of the music changed, then Melody must have ridden the magical elevator! <br>
+So listen carefully, and keep the music playing in your head. <br>
+Then, choose which elevator I rode: the normal one, or the magical one! <br><br>
+ Are you ready? <br>
+ Let’s go!
+<br><br>
       </p>
       <audio id="realInstructionsAudio" src="real_trials_instructions.mp3"></audio>
       <button id="playRealInstructions" class="btn-primary" style="margin-top:20px;">Click to Play Instructions</button>
@@ -923,6 +953,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
