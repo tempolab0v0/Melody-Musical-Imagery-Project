@@ -610,6 +610,10 @@ Then, choose which elevator I rode: the normal one, or the magical one!<br>
 /* REAL TRIALS */
 
 function showRealTrialsIntro() {
+  // make sure an old overlay isn’t covering your buttons
+  const overlay = document.getElementById('overlay');
+  if (overlay) overlay.style.display = 'none';
+
   updateScreen(`
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;
       background: white;
@@ -637,23 +641,23 @@ Then, choose which elevator I rode: the normal one, or the magical one! <br><br>
   const startBtn = document.getElementById("startRealTrials");
   const audio = document.getElementById("realInstructionsAudio");
 
+  if (!playBtn || !startBtn || !audio) {
+    console.error("Intro elements missing from DOM.");
+    return;
+  }
+
   playBtn.addEventListener("click", async () => {
     playBtn.disabled = true;
-    try {
-      await audio.play();
-    } catch (err) {
-      console.warn("Autoplay blocked or failed:", err);
-    }
-    audio.onended = () => {
-      startBtn.style.display = "inline-block";
-    };
+    try { await audio.play(); } catch (err) { console.warn("Autoplay blocked:", err); }
+    audio.onended = () => { startBtn.style.display = "inline-block"; };
   });
 
   startBtn.addEventListener("click", startRealTrials);
 }
 
+
 async function startRealTrials() {
-  const block = BLOCK_ORDER[currentBlockIndex]; // <-- don't override here
+  const block = BLOCK_ORDER[currentBlockIndex];
 
   try {
     if (!blocks[block] || blocks[block].length === 0) {
@@ -663,12 +667,18 @@ async function startRealTrials() {
   } catch (err) {
     updateScreen(`<h2>⚠️ Failed to load block: ${block}<br>${err.message}</h2>`);
     return;
- }
+  }
 
   trialsInCurrentBlock = 0;
   animalsShownInBlock = 0;
 
+  // Rebuild the persistent base UI (audio, videos, trialControls, overlay, etc.)
   rebuildBaseHTML();
+
+  // IMPORTANT: re-grab fresh DOM nodes for visuals after rebuilding
+  setupVisualElements();
+
+  // Create the “Start Trial …” button
   updatePlayButton();
 }
 
@@ -725,9 +735,17 @@ function hideAll() {
   
 async function playTrial() {
   console.log('playTrial called');
-  document.getElementById("trialControls").innerHTML = "";
-  updateScreen("");
-  hideAll();
+
+  // clear only the trialControls area (do not call updateScreen("") here)
+  const tc = document.getElementById("trialControls");
+  if (tc) tc.innerHTML = "";
+
+  hideAll(); // this just hides videos/stills but keeps DOM intact
+
+  // ensure visuals point at the current DOM after any rebuilds
+  if (visuals.length !== 6 || visuals.some(v => !v.el || !document.body.contains(v.el))) {
+    setupVisualElements();
+  }
 
   const block = BLOCK_ORDER[currentBlockIndex];
   const trial = blocks[block][trialCounter - 1];
@@ -742,14 +760,23 @@ async function playTrial() {
   const gapSec = parseFloat(gap);
   const testSec = parseFloat(test);
 
-   const audio = document.getElementById("myAudio");
+  const audio = document.getElementById("myAudio");
+  if (!audio) {
+    updateScreen('<h2>Error: Missing <audio id="myAudio"> in the base HTML.</h2>');
+    return;
+  }
   audio.src = filename;
   audio.load();
   currentAudioFile = filename;
-  
-  const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
 
-  // Wait for all videos to have metadata loaded
+  const videos = visuals.filter(v => v.el && v.el.tagName === "VIDEO").map(v => v.el);
+  if (videos.length !== 3) {
+    updateScreen('<h2>Error: Expected 3 videos (video1, gapVideo, video2) in the DOM.</h2>');
+    return;
+  }
+  const [v1, vGap, v2] = videos;
+
+  // Wait for metadata
   await Promise.all([
     new Promise(res => { if (v1.readyState >= 1) res(); else v1.onloadedmetadata = res; }),
     new Promise(res => { if (vGap.readyState >= 1) res(); else vGap.onloadedmetadata = res; }),
@@ -758,9 +785,9 @@ async function playTrial() {
 
   // Prime videos
   await Promise.all([
-    v1.play().then(() => v1.pause()),
-    vGap.play().then(() => vGap.pause()),
-    v2.play().then(() => v2.pause())
+    v1.play().then(() => v1.pause()).catch(()=>{}),
+    vGap.play().then(() => vGap.pause()).catch(()=>{}),
+    v2.play().then(() => v2.pause()).catch(()=>{})
   ]);
 
   const video1Sec = v1.duration;
@@ -773,9 +800,9 @@ async function playTrial() {
     return;
   }
 
-  const preStillSec = Math.max(0, originalSec - video1Sec);
-  const gapStillSec = Math.max(0, gapSec - gapVideoSec);
-  const postStillSec = Math.max(0, testSec - video2Sec);
+  const preStillSec  = Math.max(0, originalSec - video1Sec);
+  const gapStillSec  = Math.max(0, gapSec     - gapVideoSec);
+  const postStillSec = Math.max(0, testSec    - video2Sec);
 
   let t = 0;
   visuals[0].start = t; visuals[0].end = t += preStillSec;
@@ -789,6 +816,43 @@ async function playTrial() {
   trialStartTime = performance.now();
 
   let currentVisual = null;
+
+  function updateVisuals() {
+    const time = audio.currentTime;
+    for (const v of visuals) {
+      if (time >= v.start && time < v.end) {
+        if (currentVisual !== v.el) {
+          hideAll();
+          v.el.style.display = "block";
+          if (v.el.tagName === "VIDEO") v.el.play();
+          currentVisual = v.el;
+        }
+        break;
+      }
+    }
+    if (time < visuals[visuals.length - 1].end) {
+      requestAnimationFrame(updateVisuals);
+    } else {
+      hideAll();
+      showResponseOptions();
+    }
+  }
+
+  try {
+    console.log('Attempting to play audio:', audio.src);
+    await audio.play();
+    console.log('Audio playback started');
+    updateVisuals();
+  } catch (err) {
+    console.warn("Audio autoplay blocked or failed:", err);
+    showAutoplayOverlay(audio, updateVisuals);
+    const overlay = document.getElementById("overlay");
+    if (overlay) {
+      overlay.innerHTML += '<div style="font-size:1.2em;margin-top:16px;">Audio was blocked. Click the button above to start the trial.</div>';
+    }
+  }
+}
+
 
   function updateVisuals() {
     const time = audio.currentTime;
@@ -953,6 +1017,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
