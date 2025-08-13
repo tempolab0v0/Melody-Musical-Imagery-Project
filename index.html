@@ -158,41 +158,20 @@ const visuals=[];
 let completedTrials=0;
 let animalIndex = 0; // add near the top of your script
 
-// ---- WebAudio booster -------------------------------------------------
+// ---- WebAudio booster (gesture-safe) ---------------------------------
 const AudioEngine = (() => {
-  let ctx = null;
-  const sources = new Map();   // el -> {src, gain, group}
+  let ctx = null, comp = null;
+  const sources = new Map();        // el -> { src, gain, group }
+  const pending = new Set();        // elements seen before ctx starts
   const groups = {
-    narration: 1.0,  // human voice tracks (MP3s like intro_narration*.mp3)
-    sfx:       1.0,  // correct/wrong feedback, animal sounds
-    video:     2.5,  // 🔊 boost videos (MP4) — adjust to taste
-    music:     1.2   // your main trial audio (myAudio)
+    narration: 1.0,  // voice MP3s
+    sfx:       1.0,  // correct/wrong/animals
+    video:     2.5,  // quiet MP4s
+    music:     1.3   // #myAudio trials
   };
-
-  function ensureCompressor() {
-  ensureContext();
-  if (comp) return comp;
-  comp = ctx.createDynamicsCompressor();
-  // Gentle, speech/music-friendly settings
-  comp.threshold.setValueAtTime(-20, ctx.currentTime); // start compressing above -20 dB
-  comp.knee.setValueAtTime(20, ctx.currentTime);       // softer knee
-  comp.ratio.setValueAtTime(3, ctx.currentTime);       // 3:1 ratio
-  comp.attack.setValueAtTime(0.003, ctx.currentTime);  // fast attack
-  comp.release.setValueAtTime(0.15, ctx.currentTime);  // quick release
-  comp.connect(ctx.destination);
-  return comp;
-}
-
-  function ensureContext() {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === "suspended") ctx.resume().catch(()=>{});
-    return ctx;
-  }
 
   function groupFor(el) {
     const id = (el.id || "").toLowerCase();
-
-    // Heuristics by id; tweak as you like:
     if (id.includes("narration")) return "narration";
     if (id.includes("correct") || id.includes("wrong") || id.includes("animal")) return "sfx";
     if (el.tagName === "VIDEO") return "video";
@@ -200,80 +179,96 @@ const AudioEngine = (() => {
     return "music";
   }
 
-  function attach(el) {
-    // Skip if already wired
-    if (sources.has(el)) return sources.get(el);
-
-    const audioCtx = ensureContext();
-    const src = audioCtx.createMediaElementSource(el);
-    const gain = audioCtx.createGain();
-    const gg = groupFor(el);
-    gain.gain.value = groups[gg] ?? 1.0;
-
-const compressor = ensureCompressor();
-src.connect(gain).connect(compressor);
-    
-    const record = { src, gain, group: gg };
-    sources.set(el, record);
-    return record;
+  function ensureCompressor() {
+    if (!ctx) return null;
+    if (comp) return comp;
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-20, ctx.currentTime);
+    comp.knee.setValueAtTime(20, ctx.currentTime);
+    comp.ratio.setValueAtTime(3, ctx.currentTime);
+    comp.attack.setValueAtTime(0.003, ctx.currentTime);
+    comp.release.setValueAtTime(0.15, ctx.currentTime);
+    comp.connect(ctx.destination);
+    return comp;
   }
 
+  function wire(el) {
+    if (!ctx) { pending.add(el); return; }          // wait for gesture
+    if (sources.has(el)) return;
+    const src = ctx.createMediaElementSource(el);
+    const gain = ctx.createGain();
+    const gg = groupFor(el);
+    gain.gain.value = groups[gg] ?? 1.0;
+    const compressor = ensureCompressor();
+    src.connect(gain).connect(compressor ?? ctx.destination);
+    sources.set(el, { src, gain, group: gg });
+  }
+
+  function attach(el) { wire(el); }
+
   function attachAll(scope = document) {
-    scope.querySelectorAll("audio, video").forEach(el => attach(el));
+    scope.querySelectorAll("audio, video").forEach(wire);
+  }
+
+  async function start() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    try { await ctx.resume(); } catch {}
+    ensureCompressor();
+    if (pending.size) {
+      const toWire = Array.from(pending);
+      pending.clear();
+      toWire.forEach(wire);
+    }
   }
 
   function setGroupGain(group, value) {
     groups[group] = value;
-    for (const [el, rec] of sources.entries()) {
+    for (const rec of sources.values()) {
       if (rec.group === group) rec.gain.gain.value = value;
     }
   }
 
-  return { ensureContext, attach, attachAll, setGroupGain, groups };
+  return { start, attach, attachAll, setGroupGain, groups };
 })();
 
 window.onload = async () => {
-  window.addEventListener("click", () => AudioEngine.ensureContext(), { once: true });
+  // Prime WebAudio on first gesture (click/touch/key)
+  const prime = async () => {
+    await AudioEngine.start();
+    AudioEngine.attachAll(document);               // wire everything now that ctx is allowed
+
+    // Rebalance: louder videos, softer narration
+    AudioEngine.setGroupGain("video", 3.5);
+    AudioEngine.setGroupGain("music", 1.3);
+    AudioEngine.setGroupGain("narration", 0.8);
+    AudioEngine.setGroupGain("sfx", 0.8);
+  };
+  window.addEventListener("click", prime, { once: true });
+  window.addEventListener("touchend", prime, { once: true });
+  window.addEventListener("keydown", prime, { once: true });
+
   while (!participantID) {
     participantID = prompt("Enter your Participant ID:");
     if (participantID) participantID = participantID.trim();
   }
   sessionID = `${participantID}_${new Date().toISOString()}`;
 
-  // Preload all blocks at the start
-   for (const block of BLOCK_ORDER) {
-    try {
-      await loadCSVData(block);
-    } catch (err) {
-      alert(`Failed to load ${block} trials: ${err.message}`);
-    }
+  for (const block of BLOCK_ORDER) {
+    try { await loadCSVData(block); }
+    catch (err) { alert(`Failed to load ${block} trials: ${err.message}`); }
   }
 
-ANIMALS.forEach(a => {
-    a.audio = new Audio(a.sound);
-    AudioEngine.attach(a.audio);
-  });
-
-  // attach all startup media in DOM
-  AudioEngine.attachAll(document);
-  // Make video soundtracks much louder
-AudioEngine.setGroupGain("video", 3.5);     // try 3.5–4.0 if still too quiet
-AudioEngine.setGroupGain("music", 1.3);     // trial music from #myAudio
-
-// Make narration softer
-AudioEngine.setGroupGain("narration", 0.8); // drop narration to ~80% volume
-
-// Leave sound effects as is
-AudioEngine.setGroupGain("sfx", 0.8);       // feedback + animal sounds
+  // Preload animal sounds (not in DOM) — safe to queue before gesture
+  ANIMALS.forEach(a => { a.audio = new Audio(a.sound); AudioEngine.attach(a.audio); });
 
   showIntroScreen();
 };
 
 function updateScreen(html, background=null){
-  const s=document.getElementById("screen");
-  s.innerHTML=html;
-  s.style.background = background!==null?background:"transparent";
-  AudioEngine.attachAll(s); // attach new media
+  const s = document.getElementById("screen");
+  s.innerHTML = html;
+  s.style.background = background !== null ? background : "transparent";
+  AudioEngine.attachAll(s); // before gesture this queues; after gesture it wires immediately
 }
 
 async function loadCSVData(blockType) {
@@ -1097,6 +1092,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
