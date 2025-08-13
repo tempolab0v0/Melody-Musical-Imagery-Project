@@ -129,15 +129,6 @@
   <div id="trialControls"></div>
 
 <script>
-
-const GLOBAL_VOLUME = 0.8;
-
-function setGlobalVolume(el) {
-  el.volume = GLOBAL_VOLUME;
-}
-
-document.querySelectorAll("audio, video").forEach(setGlobalVolume);
-  
 const TRIALS_PER_BLOCK=2;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
@@ -183,9 +174,11 @@ window.onload = async () => {
       alert(`Failed to load ${block} trials: ${err.message}`);
     }
   }
-  // Preload animal sounds so they play immediately when needed
+
+// Preload animal sounds so they play immediately when needed
   ANIMALS.forEach(a => {
     a.audio = new Audio(a.sound);
+    setGlobalVolume(a.audio);
   });
 
   showIntroScreen();
@@ -195,6 +188,7 @@ function updateScreen(html,background=null){
   const s=document.getElementById("screen");
   s.innerHTML=html;
   s.style.background=background!==null?background:"transparent";
+  document.querySelectorAll("#screen audio, #screen video").forEach(setGlobalVolume);
 }
 
 async function loadCSVData(blockType) {
@@ -243,7 +237,6 @@ function showIntroScreen() {
 
 function showIntroVideo() {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;">
       <video id="introVideo" width="100%" height="100%" playsinline muted style="max-width:100%;max-height:100%;background:white;">
         <source src="intro_video.mp4" type="video/mp4" />
@@ -269,7 +262,6 @@ function showIntroVideo() {
 
 function showNarrationScreen() {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
       <div style="flex:1;display:flex;justify-content:center;">
         <img src="Melody.png" alt="Melody character" style="max-height:80vh;max-width:90%;border-radius:20px;" />
@@ -306,7 +298,6 @@ function showNarrationScreen() {
 
 function showFastIntro() {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
       <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
        First, we’re going to learn how the magical elevator makes music sound faster or slower.<br>
@@ -328,7 +319,6 @@ function showFastIntro() {
 
 function playFastVideo() {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <video id="fastVideo" width="100%" height="100%" playsinline style="background:white;">
       <source src="PT_FAST1.mp4" type="video/mp4" />
     </video>
@@ -341,7 +331,6 @@ function playFastVideo() {
 
 function showSlowIntro() {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
       <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
         Whoa! That was a fast ride!<br><br>
@@ -363,7 +352,6 @@ function showSlowIntro() {
 
 function playSlowVideo() {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <video id="slowVideo" width="100%" height="100%" playsinline style="background:white;">
       <source src="PT_SLOW1.mp4" type="video/mp4" />
     </video>
@@ -377,7 +365,6 @@ function playSlowVideo() {
 function showTempoInstructions() {
   setTimeout(() => {
     updateScreen(`
-      function updateScreen(html, bg=null) {
       <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
         <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
           Great! Now it's your turn!<br><br>
@@ -423,7 +410,6 @@ function runTempoPractice() {
 
 function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:white;">
       <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:white;">
         <source src="${videoFile}" type="video/mp4">
@@ -445,7 +431,6 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
 
 function showTempoResponseScreen(correctAnswer, callback) {
   updateScreen(`
-function updateScreen(html, bg=null) {
 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
     background: white;
     padding: 20px;">
@@ -491,7 +476,6 @@ function updateScreen(html, bg=null) {
 
 function runPitchDemo() {
   updateScreen(`
-   function updateScreen(html, bg=null) {
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
       <p style="font-size:1.5em;line-height:1.6;max-width:800px;text-align:center;">
         <strong>6. Pitch Practice Trials</strong><br><br>
@@ -506,7 +490,6 @@ function runPitchDemo() {
 
   function playHighDemo() {
     updateScreen(`
-      function updateScreen(html, bg=null) {
       <video id="highDemo" width="100%" height="100%" playsinline style="background:white;">
         <source src="PT_HIGH1.mp4" type="video/mp4" />
       </video>
@@ -518,7 +501,6 @@ function runPitchDemo() {
 
   function showLowText() {
     updateScreen(`
-      function updateScreen(html, bg=null) {
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
         <p style="font-size:1.5em;line-height:1.6;max-width:800px;text-align:center;">
           That was super high!<br><br>
@@ -532,7 +514,6 @@ function runPitchDemo() {
 
   function playLowDemo() {
     updateScreen(`
-      function updateScreen(html, bg=null) {
       <video id="lowDemo" width="100%" height="100%" playsinline style="background:white;">
         <source src="PT_LOW1.mp4" type="video/mp4" />
       </video>
@@ -544,7 +525,6 @@ function runPitchDemo() {
 
   function showFinalText() {
     updateScreen(`
-      function updateScreen(html, bg=null) {
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
         <p style="font-size:1.5em;line-height:1.6;max-width:800px;text-align:center;">
           Now, it’s your turn! Choose whether the music got higher, lower or stayed the same after the next rounds play.
@@ -576,8 +556,7 @@ function runPitchPractice() {
 }
 function playPitchPracticeVideo(videoFile, correctAnswer, callback) {
   updateScreen(`
-    function updateScreen(html, bg=null) {
-<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:white;">
+    <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:white;">
       <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:white;">
         <source src="${videoFile}" type="video/mp4">
       </video>
@@ -595,7 +574,6 @@ function playPitchPracticeVideo(videoFile, correctAnswer, callback) {
 }
 function showPitchResponseScreen(correctAnswer, callback) {
   updateScreen(`
-function updateScreen(html, bg=null) {
 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
     background: white;
     padding: 20px;">
@@ -642,7 +620,6 @@ function updateScreen(html, bg=null) {
 function showPitchInstructions() {
   setTimeout(() => {
     updateScreen(`
-      function updateScreen(html, bg=null) {
       <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
         <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
           I need your help! This time, when I get in the elevator you will stay outside. When the door closes,  you won’t hear the song anymore even though it will keep playing in the elevator for me. Keep singing the song in your head so that when the elevator gets to the next floor and the doors open up, you can tell me if I was in the normal elevator or the magical one. <br><br>
@@ -679,7 +656,6 @@ Then, choose which elevator I rode: the normal one, or the magical one!<br>
 
 function showRealTrialsIntro() {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;
       background: white;
       padding:40px;box-sizing:border-box;">
@@ -803,7 +779,6 @@ async function playTrial() {
   if (!trial) {
     updateScreen(`<h2>Error: No trial data found. Please check your CSV and block setup.</h2>`);
     console.error('No trial data found for block', block, 'trialCounter', trialCounter);
-  
     return;
   }
 
@@ -898,7 +873,6 @@ async function playTrial() {
   
 function showResponseOptions() {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: white;">
       <h1 style="color: #4b2e83;">Which elevator did Melody ride?</h1>
       <p style="max-width:600px;font-size:1.1em;margin-bottom:30px;">
@@ -994,7 +968,6 @@ function showAnimalScreen(callback) {
   const animal = ANIMALS[animalIndex % ANIMALS.length];
   animalIndex++;
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:20px;">
       <img src="${animal.image}" alt="${animal.name}" style="max-width:40%;height:auto;margin-bottom:20px;"/>
       <h2>Ding! We stopped at the ${animal.name}'s floor!</h2>
@@ -1015,7 +988,6 @@ function showAnimalScreen(callback) {
   
 function showParty() {
   updateScreen(`
-    function updateScreen(html, bg=null) {
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:20px;">
       <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:20px;">
         ${ANIMALS.map(a => `<img src="${a.image}" alt="${a.name}" style="width:120px;height:auto;"/>`).join('')}
@@ -1031,12 +1003,10 @@ function rebuildBaseHTML() {
   setupVisualElements();
 }
 setupVisualElements();
-
-document.querySelectorAll("#screen audio, #screen video")
-          .forEach(setGlobalVolume);
 </script>
 </body>
 </html>
+
 
 
 
