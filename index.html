@@ -129,6 +129,12 @@
   <div id="trialControls"></div>
 
 <script>
+
+const GLOBAL_VOLUME = 0.8;  // 0 = muted, 1 = full volume
+document.querySelectorAll("audio, video").forEach(m => {
+  m.volume = GLOBAL_VOLUME;
+});
+  
 const TRIALS_PER_BLOCK=2;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
@@ -1004,6 +1010,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
