@@ -128,15 +128,7 @@
   <audio id="introNarration" src="intro_narration.mp3" hidden preload="auto"></audio>
   <div id="trialControls"></div>
 
-<script>
-const GLOBAL_VOLUME = 0.8;
-
-function setGlobalVolume(el) {
-  el.volume = GLOBAL_VOLUME;
-}
-
-document.querySelectorAll("audio, video").forEach(setGlobalVolume);
-  
+<script>  
 const TRIALS_PER_BLOCK=2;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
@@ -166,8 +158,67 @@ const visuals=[];
 let completedTrials=0;
 let animalIndex = 0; // add near the top of your script
 
+// ---- WebAudio booster -------------------------------------------------
+const AudioEngine = (() => {
+  let ctx = null;
+  const sources = new Map();   // el -> {src, gain, group}
+  const groups = {
+    narration: 1.0,  // human voice tracks (MP3s like intro_narration*.mp3)
+    sfx:       1.0,  // correct/wrong feedback, animal sounds
+    video:     2.5,  // 🔊 boost videos (MP4) — adjust to taste
+    music:     1.2   // your main trial audio (myAudio)
+  };
+
+  function ensureContext() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === "suspended") ctx.resume().catch(()=>{});
+    return ctx;
+  }
+
+  function groupFor(el) {
+    const id = (el.id || "").toLowerCase();
+
+    // Heuristics by id; tweak as you like:
+    if (id.includes("narration")) return "narration";
+    if (id.includes("correct") || id.includes("wrong") || id.includes("animal")) return "sfx";
+    if (el.tagName === "VIDEO") return "video";
+    if (id === "myaudio") return "music";
+    return "music";
+  }
+
+  function attach(el) {
+    // Skip if already wired
+    if (sources.has(el)) return sources.get(el);
+
+    const audioCtx = ensureContext();
+    const src = audioCtx.createMediaElementSource(el);
+    const gain = audioCtx.createGain();
+    const gg = groupFor(el);
+    gain.gain.value = groups[gg] ?? 1.0;
+
+    src.connect(gain).connect(audioCtx.destination);
+
+    const record = { src, gain, group: gg };
+    sources.set(el, record);
+    return record;
+  }
+
+  function attachAll(scope = document) {
+    scope.querySelectorAll("audio, video").forEach(el => attach(el));
+  }
+
+  function setGroupGain(group, value) {
+    groups[group] = value;
+    for (const [el, rec] of sources.entries()) {
+      if (rec.group === group) rec.gain.gain.value = value;
+    }
+  }
+
+  return { ensureContext, attach, attachAll, setGroupGain, groups };
+})();
 
 window.onload = async () => {
+  window.addEventListener("click", () => AudioEngine.ensureContext(), { once: true });
   while (!participantID) {
     participantID = prompt("Enter your Participant ID:");
     if (participantID) participantID = participantID.trim();
@@ -183,20 +234,22 @@ window.onload = async () => {
     }
   }
 
-// Preload animal sounds so they play immediately when needed
-  ANIMALS.forEach(a => {
+ANIMALS.forEach(a => {
     a.audio = new Audio(a.sound);
-    setGlobalVolume(a.audio);
+    AudioEngine.attach(a.audio);
   });
+
+  // attach all startup media in DOM
+  AudioEngine.attachAll(document);
 
   showIntroScreen();
 };
 
-function updateScreen(html,background=null){
+function updateScreen(html, background=null){
   const s=document.getElementById("screen");
   s.innerHTML=html;
-  s.style.background=background!==null?background:"transparent";
-  document.querySelectorAll("#screen audio, #screen video").forEach(setGlobalVolume);
+  s.style.background = background!==null?background:"transparent";
+  AudioEngine.attachAll(s); // attach new media
 }
 
 async function loadCSVData(blockType) {
@@ -333,6 +386,7 @@ function playFastVideo() {
   `);
 
   const video = document.getElementById("fastVideo");
+  video.muted = false;
   video.play().catch(e => console.warn("Video play failed:", e));
   video.onended = showSlowIntro;
 }
@@ -366,6 +420,7 @@ function playSlowVideo() {
   `);
 
   const video = document.getElementById("slowVideo");
+  video.muted = false;
   video.play().catch(e => console.warn("Video play failed:", e));
   video.onended = showTempoInstructions;
 }
@@ -426,7 +481,7 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
   `);
 
   const video = document.getElementById("practiceVideo");
-
+video.muted = false;
   video.onended = () => {
     showTempoResponseScreen(correctAnswer, callback);
   };
@@ -503,6 +558,7 @@ function runPitchDemo() {
       </video>
     `);
     const video = document.getElementById("highDemo");
+    video.muted = false;
     video.play().catch(() => {});
     video.onended = showLowText;
   }
@@ -527,6 +583,7 @@ function runPitchDemo() {
       </video>
     `);
     const video = document.getElementById("lowDemo");
+    video.muted = false;
     video.play().catch(() => {});
     video.onended = showFinalText;
   }
@@ -572,6 +629,7 @@ function playPitchPracticeVideo(videoFile, correctAnswer, callback) {
   `);
 
   const video = document.getElementById("practiceVideo");
+  video.muted = false;
   video.onended = () => {
     showPitchResponseScreen(correctAnswer, callback);
   };
@@ -1012,11 +1070,10 @@ function rebuildBaseHTML() {
 }
 setupVisualElements();
 
-document.querySelectorAll("#screen audio, #screen video")
-          .forEach(setGlobalVolume);
 </script>
 </body>
 </html>
+
 
 
 
