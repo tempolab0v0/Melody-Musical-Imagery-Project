@@ -164,8 +164,8 @@ const AudioEngine = (() => {
   const sources = new Map();        // el -> { src, gain, group }
   const pending = new Set();        // elements seen before ctx starts
   const groups = {
-    narration: 1.0,  // voice MP3s
-    sfx:       1.0,  // correct/wrong/animals
+    narration: 0.75,  // voice MP3s
+    sfx:       0.75,  // correct/wrong/animals
     video:     2.5,  // quiet MP4s
     music:     1.3   // #myAudio trials
   };
@@ -1092,6 +1092,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
