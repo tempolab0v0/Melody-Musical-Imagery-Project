@@ -169,6 +169,20 @@ const AudioEngine = (() => {
     music:     1.2   // your main trial audio (myAudio)
   };
 
+  function ensureCompressor() {
+  ensureContext();
+  if (comp) return comp;
+  comp = ctx.createDynamicsCompressor();
+  // Gentle, speech/music-friendly settings
+  comp.threshold.setValueAtTime(-20, ctx.currentTime); // start compressing above -20 dB
+  comp.knee.setValueAtTime(20, ctx.currentTime);       // softer knee
+  comp.ratio.setValueAtTime(3, ctx.currentTime);       // 3:1 ratio
+  comp.attack.setValueAtTime(0.003, ctx.currentTime);  // fast attack
+  comp.release.setValueAtTime(0.15, ctx.currentTime);  // quick release
+  comp.connect(ctx.destination);
+  return comp;
+}
+
   function ensureContext() {
     if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (ctx.state === "suspended") ctx.resume().catch(()=>{});
@@ -196,8 +210,9 @@ const AudioEngine = (() => {
     const gg = groupFor(el);
     gain.gain.value = groups[gg] ?? 1.0;
 
-    src.connect(gain).connect(audioCtx.destination);
-
+const compressor = ensureCompressor();
+src.connect(gain).connect(compressor);
+    
     const record = { src, gain, group: gg };
     sources.set(el, record);
     return record;
@@ -1073,6 +1088,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
