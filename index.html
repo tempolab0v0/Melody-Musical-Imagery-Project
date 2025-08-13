@@ -130,10 +130,17 @@
 
 <script>
 
-const GLOBAL_VOLUME = 0.8;  // 0 = muted, 1 = full volume
-document.querySelectorAll("audio, video").forEach(m => {
-  m.volume = GLOBAL_VOLUME;
-});
+const ctx = new (window.AudioContext || window.webkitAudioContext)();
+const globalGain = ctx.createGain();
+globalGain.gain.value = 0.8;
+globalGain.connect(ctx.destination);
+
+function attach(mediaElem){
+  const src = ctx.createMediaElementSource(mediaElem);
+  src.connect(globalGain);
+}
+
+document.querySelectorAll("audio, video").forEach(attach);
   
 const TRIALS_PER_BLOCK=2;
 const BLOCK_ORDER=["tempo","pitch"];
@@ -1010,6 +1017,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
