@@ -256,6 +256,15 @@ ANIMALS.forEach(a => {
 
   // attach all startup media in DOM
   AudioEngine.attachAll(document);
+  // Make video soundtracks much louder
+AudioEngine.setGroupGain("video", 3.5);     // try 3.5–4.0 if still too quiet
+AudioEngine.setGroupGain("music", 1.3);     // trial music from #myAudio
+
+// Make narration softer
+AudioEngine.setGroupGain("narration", 0.8); // drop narration to ~80% volume
+
+// Leave sound effects as is
+AudioEngine.setGroupGain("sfx", 0.8);       // feedback + animal sounds
 
   showIntroScreen();
 };
@@ -1088,6 +1097,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
