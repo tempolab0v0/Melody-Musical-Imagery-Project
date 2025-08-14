@@ -543,15 +543,17 @@ function showTempoResponseScreen(correctAnswer, callback) {
         document.getElementById("feedback").innerText = "Correct!";
         document.getElementById("correctSound").play().catch(() => {});
         setTimeout(callback, 1500);
-      } else {
-        document.getElementById("feedback").style.color = "red";
-        document.getElementById("feedback").innerText = "Oops! Try again.";
-        document.getElementById("wrongSound").play().catch(() => {});
-        setTimeout(() => {
-          answered = false;
-          buttons.forEach(b => b.disabled = false);
-        }, 2000);
-      }
+} else {
+  document.getElementById("feedback").style.color = "red";
+  document.getElementById("feedback").innerText = "Oops! Let's try that one again.";
+  document.getElementById("wrongSound").play().catch(() => {});
+
+  setTimeout(() => {
+    // Replay the same trial video
+    playTempoPracticeVideo(`${correctAnswer === "fast" ? "PT_FAST2.mp4" : "PT_SLOW2.mp4"}`, correctAnswer, callback);
+  }, 1500);
+}
+
     });
   });
 }
@@ -724,15 +726,17 @@ function showPitchResponseScreen(correctAnswer, callback) {
         document.getElementById("feedback").innerText = "Correct!";
         document.getElementById("correctSound").play().catch(() => {});
         setTimeout(callback, 1500);
-      } else {
-        document.getElementById("feedback").style.color = "red";
-        document.getElementById("feedback").innerText = "Oops! Try again.";
-        document.getElementById("wrongSound").play().catch(() => {});
-        setTimeout(() => {
-          answered = false;
-          buttons.forEach(b => b.disabled = false);
-        }, 2000);
-      }
+} else {
+  document.getElementById("feedback").style.color = "red";
+  document.getElementById("feedback").innerText = "Oops! Let's try that one again.";
+  document.getElementById("wrongSound").play().catch(() => {});
+
+  setTimeout(() => {
+    // Replay the same trial video
+    playPitchPracticeVideo(`${correctAnswer === "high" ? "PT_HIGH2.mp4" : "PT_LOW2.mp4"}`, correctAnswer, callback);
+  }, 1500);
+}
+
     });
   });
 }
@@ -1286,6 +1290,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
