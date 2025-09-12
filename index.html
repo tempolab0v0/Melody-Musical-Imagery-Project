@@ -513,57 +513,48 @@ video.muted = false;
   });
 }
 
-function showTempoResponseScreen(correctAnswer, callback) {
-  updateScreen(`
-<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
-    background: white;
-    padding: 20px;">
-      <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
-      <div style="display: flex; gap: 40px; margin-top: 20px;">
-        <button class="tempo-btn" data-choice="fast" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Fast</button>
-        <button class="tempo-btn" data-choice="slow" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Slow</button>
-        <button class="tempo-btn" data-choice="same" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Same</button>
-      </div>
-      <audio id="correctSound" src="correct_feedback.mp3"></audio>
-      <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
-      <div id="feedback" style="margin-top: 20px; font-size: 1.2em; color: red;"></div>
-    </div>
-  `);
+function showTempoResponseScreen(choice, correctAnswer) {
+  if (responseSubmitted) return;
+  responseSubmitted = true;
 
-  const buttons = document.querySelectorAll('.tempo-btn');
-  let answered = false;
+  // disable further clicks
+  const imgs = document.querySelectorAll('.tempo-option');
+  imgs.forEach(img => img.style.pointerEvents = 'none');
 
-  buttons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (answered) return;
-      answered = true;
-      const choice = btn.getAttribute('data-choice');
-      buttons.forEach(b => b.disabled = true);
+  const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
 
+  // build the entry object for Backendless
+  const entry = {
+    participant: participantID,
+    session: sessionID,
+    block: "tempo_practice",        // label clearly as practice
+    trial_num: trialCounter,
+    timestamp: new Date().toISOString(),
+    choice,
+    audio: "practice_video",        // or the actual video filename if you want
+    correct_answer: correctAnswer,
+    reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3)),
+    practice: true                  // extra flag so you can filter later
+  };
 
-      fetch("https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(entry)
-      });
+  // send to Backendless
+  fetch("https://api.backendless.com/YOUR-APP-ID/YOUR-REST-API-KEY/data/responses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry)
+  })
+  .then(() => {
+    trialsInCurrentBlock++;
+    trialCounter++;
+    if (trialCounter > TRIALS_PER_BLOCK) {
+      trialCounter = 1;
+      currentBlockIndex++;
+    }
 
-      if (choice === correctAnswer) {
-        document.getElementById("feedback").style.color = "green";
-        document.getElementById("feedback").innerText = "Correct!";
-        document.getElementById("correctSound").play().catch(() => {});
-        setTimeout(callback, 1500);
-} else {
-        document.getElementById("feedback").style.color = "red";
-        document.getElementById("feedback").innerText = "Oops! Let's try that one again.";
-        document.getElementById("wrongSound").play().catch(() => {});
-        setTimeout(() => {
-          // Replay the same trial video
-          playTempoPracticeVideo(`${correctAnswer === "fast" ? "PT_FAST2.mp4" : "PT_SLOW2.mp4"}`, correctAnswer, callback);
-        }, 4500);
-      }
-
-    });
-  });
+    completedTrials++;
+    updateProgress();
+  })
+  .catch(err => console.error("Error saving response:", err));
 }
 
 function runPitchDemo() {
@@ -1298,6 +1289,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
