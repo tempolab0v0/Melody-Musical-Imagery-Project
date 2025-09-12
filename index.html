@@ -471,6 +471,7 @@ function showTempoInstructions() {
 function runTempoPractice() {
   const practiceTrials = [
     { video: "PT_FAST2.mp4", correct: "fast" },
+    { video: "PT_Same.mp4", correct: "same" },
     { video: "PT_SLOW2.mp4", correct: "slow" }
   ];
   let i = 0;
@@ -501,6 +502,7 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
 
   const video = document.getElementById("practiceVideo");
 video.muted = false;
+  video.volume = 1.0;
   video.onended = () => {
     showTempoResponseScreen(correctAnswer, callback);
   };
@@ -1290,6 +1292,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
