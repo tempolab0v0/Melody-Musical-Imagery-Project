@@ -540,18 +540,7 @@ function showTempoResponseScreen(correctAnswer, callback) {
       const choice = btn.getAttribute('data-choice');
       buttons.forEach(b => b.disabled = true);
 
-// Save practice trial response to Backendless
-      const entry = {
-        participant_id: participantID,
-        session_id: sessionID,
-        trial_type: "practice",
-        trial_num: `pt ${i}`,
-        video: practiceTrials[i-1].video,
-        choice,
-        correct_answer: correctAnswer,
-        is_correct: choice === correctAnswer,
-        timestamp: new Date().toISOString()
-      };
+
       fetch("https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1309,6 +1298,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
