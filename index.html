@@ -534,7 +534,7 @@ function showTempoResponseScreen(choice, correctAnswer) {
     audio: "practice_video",
     correct_answer: correctAnswer,
     reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3)),
-    practice: true
+    practice_trial: true
   };
 
   // send to Backendless (real trial table)
@@ -544,17 +544,25 @@ function showTempoResponseScreen(choice, correctAnswer) {
     body: JSON.stringify(entry)
   })
   .then(() => {
-    trialsInCurrentBlock++;
     trialCounter++;
-    if (trialCounter > TRIALS_PER_BLOCK) {
+    if (typeof TRIALS_PER_BLOCK !== 'undefined' && trialCounter > TRIALS_PER_BLOCK) {
       trialCounter = 1;
       currentBlockIndex++;
     }
-
-    completedTrials++;
-    updateProgress();
+    if (typeof completedTrials !== 'undefined') completedTrials++;
+    if (typeof updateProgress === 'function') updateProgress();
   })
-  .catch(err => console.error("Error saving response:", err));
+  .catch(err => {
+    console.error("Error saving response:", err);
+    // Always continue to next screen even if save fails
+    trialCounter++;
+    if (typeof TRIALS_PER_BLOCK !== 'undefined' && trialCounter > TRIALS_PER_BLOCK) {
+      trialCounter = 1;
+      currentBlockIndex++;
+    }
+    if (typeof completedTrials !== 'undefined') completedTrials++;
+    if (typeof updateProgress === 'function') updateProgress();
+  });
 }
 
 function runPitchDemo() {
