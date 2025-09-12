@@ -521,48 +521,7 @@ function showTempoResponseScreen(choice, correctAnswer) {
   const imgs = document.querySelectorAll('.tempo-option');
   imgs.forEach(img => img.style.pointerEvents = 'none');
 
-  const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
-
-  // build the entry object for Backendless
-  const entry = {
-    participant: participantID,
-    session: sessionID,
-    block: "tempo_practice",
-    trial_num: `pt ${trialCounter}`,
-    timestamp: new Date().toISOString(),
-    choice,
-    audio: "practice_video",
-    correct_answer: correctAnswer,
-    reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3)),
-    practice_trial: true
-  };
-
-  // send to Backendless (real trial table)
-  fetch("https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entry)
-  })
-  .then(() => {
-    trialCounter++;
-    if (typeof TRIALS_PER_BLOCK !== 'undefined' && trialCounter > TRIALS_PER_BLOCK) {
-      trialCounter = 1;
-      currentBlockIndex++;
-    }
-    if (typeof completedTrials !== 'undefined') completedTrials++;
-    if (typeof updateProgress === 'function') updateProgress();
-  })
-  .catch(err => {
-    console.error("Error saving response:", err);
-    // Always continue to next screen even if save fails
-    trialCounter++;
-    if (typeof TRIALS_PER_BLOCK !== 'undefined' && trialCounter > TRIALS_PER_BLOCK) {
-      trialCounter = 1;
-      currentBlockIndex++;
-    }
-    if (typeof completedTrials !== 'undefined') completedTrials++;
-    if (typeof updateProgress === 'function') updateProgress();
-  });
+  // ...existing code...
 }
 
 function runPitchDemo() {
@@ -1297,6 +1256,8 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
+
 
 
 
