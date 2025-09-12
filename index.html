@@ -374,7 +374,7 @@ function showNarrationScreen() {
   });
 }
 
-/* --------------------- TEMPO PRACTICE FLOW ------------------------ */
+/* --------------------- TEMPO PRACTICE FLOW ------------------------------------------------------------------------------------------------------------------------------- */
 
 function showFastIntro() {
   updateScreen(`
@@ -514,16 +514,16 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
   });
 }
 
-function showTempoResponseScreen(choice, correctAnswer) {
+function showTempoResponseScreen(correctAnswer, callback) {
   updateScreen(`
-<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
-    background: white;
-    padding: 20px;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+        background: white;
+        padding: 20px;">
       <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
       <div style="display: flex; gap: 40px; margin-top: 20px;">
-        <button class="tempo-btn" data-choice="fast" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Fast</button>
-        <button class="tempo-btn" data-choice="slow" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Slow</button>
-        <button class="tempo-btn" data-choice="same" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Same</button>
+        <button class="tempo-btn" data-choice="fast">Fast</button>
+        <button class="tempo-btn" data-choice="slow">Slow</button>
+        <button class="tempo-btn" data-choice="same">Same</button>
       </div>
       <audio id="correctSound" src="correct_feedback.mp3"></audio>
       <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
@@ -538,25 +538,30 @@ function showTempoResponseScreen(choice, correctAnswer) {
     btn.addEventListener('click', () => {
       if (answered) return;
       answered = true;
-      const choice = btn.getAttribute('data-choice');
+
+      const userChoice = btn.getAttribute('data-choice');
       buttons.forEach(b => b.disabled = true);
 
-      if (choice === correctAnswer) {
+      if (userChoice === correctAnswer) {
         document.getElementById("feedback").style.color = "green";
         document.getElementById("feedback").innerText = "Correct!";
         document.getElementById("correctSound").play().catch(() => {});
         setTimeout(callback, 1500);
-} else {
-  document.getElementById("feedback").style.color = "red";
-  document.getElementById("feedback").innerText = "Oops! Let's try that one again.";
-  document.getElementById("wrongSound").play().catch(() => {});
-
-  setTimeout(() => {
-    // Replay the same trial video
-    playTempoPracticeVideo(`${correctAnswer === "fast" ? "PT_FAST2.mp4" : "PT_SLOW2.mp4"}`, correctAnswer, callback);
-  }, 4000);
-}
-
+      } else {
+        document.getElementById("feedback").style.color = "red";
+        document.getElementById("feedback").innerText = "Oops! Let's try that one again.";
+        document.getElementById("wrongSound").play().catch(() => {});
+        setTimeout(() => {
+          // replay the same trial video again
+          playTempoPracticeVideo(
+            correctAnswer === "fast" ? "PT_FAST2.mp4"
+            : correctAnswer === "slow" ? "PT_SLOW2.mp4"
+            : "PT_SAME.mp4",
+            correctAnswer,
+            callback
+          );
+        }, 4000);
+      }
     });
   });
 }
@@ -1293,6 +1298,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
