@@ -505,16 +505,16 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
   video.muted = false;
     video.volume = 1.0;
   video.onended = () => {
-    showTempoResponseScreen(correctAnswer, callback);
+    showTempoResponseScreen(correctAnswer, callback, videoFile);
   };
 
   video.play().catch(err => {
     console.warn("Autoplay issue or play failed:", err);
-    showTempoResponseScreen(correctAnswer, callback);
+    showTempoResponseScreen(correctAnswer, callback, videoFile);
   });
 }
 
-function showTempoResponseScreen(correctAnswer, callback) {
+function showTempoResponseScreen(correctAnswer, callback, videoFile) {
   updateScreen(`
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
         background: white;
@@ -551,12 +551,10 @@ function showTempoResponseScreen(correctAnswer, callback) {
         document.getElementById("feedback").style.color = "red";
         document.getElementById("feedback").innerText = "Oops! Let's try that one again.";
         document.getElementById("wrongSound").play().catch(() => {});
-        setTimeout(() => {
+setTimeout(() => {
           // replay the same trial video again
           playTempoPracticeVideo(
-            correctAnswer === "fast" ? "PT_FAST2.mp4"
-            : correctAnswer === "slow" ? "PT_SLOW2.mp4"
-            : "PT_SAME.mp4",
+            videoFile,
             correctAnswer,
             callback
           );
@@ -565,6 +563,7 @@ function showTempoResponseScreen(correctAnswer, callback) {
     });
   });
 }
+  
 
 function runPitchDemo() {
   updateScreen(`
@@ -1298,6 +1297,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
