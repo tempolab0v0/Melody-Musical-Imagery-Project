@@ -477,6 +477,7 @@ function runTempoPractice() {
   let i = 0;
 
   function nextPractice() {
+    responseSubmitted = false; // Reset for each practice trial
     if (i >= practiceTrials.length) {
       currentBlockIndex = 0; // ✅ SET tempo block here
       trialCounter = 1;
@@ -1256,6 +1257,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
