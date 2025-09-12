@@ -502,7 +502,7 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
 
   const video = document.getElementById("practiceVideo");
 video.muted = false;
-  video.volume = 1.0;
+  video.volume = 2.0;
   video.onended = () => {
     showTempoResponseScreen(correctAnswer, callback);
   };
@@ -553,7 +553,7 @@ function showTempoResponseScreen(correctAnswer, callback) {
   setTimeout(() => {
     // Replay the same trial video
     playTempoPracticeVideo(`${correctAnswer === "fast" ? "PT_FAST2.mp4" : "PT_SLOW2.mp4"}`, correctAnswer, callback);
-  }, 4000);
+  }, 5000);
 }
 
     });
@@ -1292,6 +1292,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
