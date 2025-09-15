@@ -537,9 +537,9 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
         padding: 20px;">
       <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
       <div style="display: flex; gap: 40px; margin-top: 20px;">
-        <button class="tempo-btn" data-choice="fast">Fast</button>
-        <button class="tempo-btn" data-choice="slow">Slow</button>
-        <button class="tempo-btn" data-choice="same">Same</button>
+        <button class="tempo-btn" data-choice="fast" style="margin-top:30px;font-size:1em;">Fast</button>
+        <button class="tempo-btn" data-choice="slow" style="margin-top:30px;font-size:1em;">Slow</button>
+        <button class="tempo-btn" data-choice="same" style="margin-top:30px;font-size:1em;">Same</button>
       </div>
       <audio id="correctSound" src="correct_feedback.mp3"></audio>
       <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
@@ -1370,6 +1370,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
