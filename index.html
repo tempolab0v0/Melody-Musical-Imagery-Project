@@ -572,7 +572,7 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
         audio: videoFile,
         correct_answer: correctAnswer,
         reaction_time_sec: reactionTimeSec,
-        phase: "practice"
+        trial_phase: "practice"
       };
 
       saveResponse(entry)
@@ -792,7 +792,7 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
         audio: videoFile,
         correct_answer: correctAnswer,
         reaction_time_sec: reactionTimeSec,
-        phase: "practice"
+        trial_phase: "practice"
       };
 
       saveResponse(entry)
@@ -1122,7 +1122,7 @@ const entry = {
     audio: currentAudioFile,
     correct_answer: correctAnswer,
     reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3)),
-    phase: "real"
+    trial_phase: "real"
   };
 
   saveResponse(entry)
@@ -1370,6 +1370,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
