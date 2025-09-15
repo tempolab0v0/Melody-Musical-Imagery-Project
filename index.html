@@ -143,6 +143,8 @@ const ANIMALS = [
   {name:"Parrot", image:"parrot.png", sound:"parrot.mp3", action:"Stand tall, flap 8 times, then give one big squawk — ‘SQUAWK!’"}
 ];
 
+const BACKENDLESS_URL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
+
 let pitchPracticeCompleted = false;
 
 let blocks={tempo:[],pitch:[]};
@@ -228,8 +230,16 @@ const AudioEngine = (() => {
     }
   }
 
-  return { start, attach, attachAll, setGroupGain, groups };
+return { start, attach, attachAll, setGroupGain, groups };
 })();
+
+function saveResponse(entry) {
+  return fetch(BACKENDLESS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry)
+  });
+}
 
 window.onload = async () => {
   // Prime WebAudio on first gesture (click/touch/key)
@@ -334,7 +344,7 @@ function showIntroVideo() {
     } catch (err) {
       console.warn("Playback failed:", err);
     }
-    video.onended = () => setTimeout(showNarrationScreen, 2000);
+    video.onended = () => setTimeout(showNarrationScreen, 1000);
   };
 
   window.addEventListener("click", startPlayback, { once: true });
@@ -475,6 +485,7 @@ function runTempoPractice() {
     { video: "PT_SLOW2.mp4", correct: "slow" }
   ];
   let i = 0;
+  let practiceTrialNum = 1;
 
   function nextPractice() {
     responseSubmitted = false; // Reset for each practice trial
@@ -484,15 +495,20 @@ function runTempoPractice() {
       showRealTrialsIntro();
       return;
     }
-    const trial = practiceTrials[i++];
-    playTempoPracticeVideo(trial.video, trial.correct, nextPractice);
+    const trial = practiceTrials[i];
+    const proceed = () => {
+      i++;
+      practiceTrialNum++;
+      nextPractice();
+    };
+    playTempoPracticeVideo(trial.video, trial.correct, proceed, practiceTrialNum);
   }
 
   nextPractice();
 }
 
 
-function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
+function playTempoPracticeVideo(videoFile, correctAnswer, callback, trialNumber) {
   updateScreen(`
     <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:white;">
       <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:white;">
@@ -505,16 +521,16 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback) {
   video.muted = false;
     video.volume = 1.0;
   video.onended = () => {
-    showTempoResponseScreen(correctAnswer, callback, videoFile);
+    showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber);
   };
 
   video.play().catch(err => {
     console.warn("Autoplay issue or play failed:", err);
-    showTempoResponseScreen(correctAnswer, callback, videoFile);
+    showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber);
   });
 }
 
-function showTempoResponseScreen(correctAnswer, callback, videoFile) {
+function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber) {
   updateScreen(`
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
         background: white;
@@ -533,6 +549,10 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile) {
 
   const buttons = document.querySelectorAll('.tempo-btn');
   let answered = false;
+  const responseStart = performance.now();
+  const feedbackEl = document.getElementById("feedback");
+  const correctSound = document.getElementById("correctSound");
+  const wrongSound = document.getElementById("wrongSound");
 
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -541,25 +561,48 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile) {
 
       const userChoice = btn.getAttribute('data-choice');
       buttons.forEach(b => b.disabled = true);
+      const reactionTimeSec = parseFloat(((performance.now() - responseStart) / 1000).toFixed(3));
+      const entry = {
+        participant: participantID,
+        session: sessionID,
+        block: "tempo_practice",
+        trial_num: trialNumber,
+        timestamp: new Date().toISOString(),
+        choice: userChoice,
+        audio: videoFile,
+        correct_answer: correctAnswer,
+        reaction_time_sec: reactionTimeSec,
+        phase: "practice"
+      };
 
-      if (userChoice === correctAnswer) {
-        document.getElementById("feedback").style.color = "green";
-        document.getElementById("feedback").innerText = "Correct!";
-        document.getElementById("correctSound").play().catch(() => {});
-        setTimeout(callback, 1500);
-      } else {
-        document.getElementById("feedback").style.color = "red";
-        document.getElementById("feedback").innerText = "Oops! Let's try that one again.";
-        document.getElementById("wrongSound").play().catch(() => {});
-setTimeout(() => {
-          // replay the same trial video again
-          playTempoPracticeVideo(
-            videoFile,
-            correctAnswer,
-            callback
-          );
-        }, 4000);
-      }
+      saveResponse(entry)
+        .then(() => {
+          if (userChoice === correctAnswer) {
+            feedbackEl.style.color = "green";
+            feedbackEl.innerText = "Correct!";
+            correctSound.play().catch(() => {});
+            setTimeout(callback, 1500);
+          } else {
+            feedbackEl.style.color = "red";
+            feedbackEl.innerText = "Oops! Let's try that one again.";
+            wrongSound.play().catch(() => {});
+            setTimeout(() => {
+              // replay the same trial video again
+              playTempoPracticeVideo(
+                videoFile,
+                correctAnswer,
+                callback,
+                trialNumber
+              );
+            }, 4000);
+          }
+        })
+        .catch(() => {
+          feedbackEl.style.color = "red";
+          feedbackEl.innerText = "We couldn't save your answer. Please try again.";
+          answered = false;
+          buttons.forEach(b => b.disabled = false);
+        });
     });
   });
 }
@@ -670,19 +713,25 @@ function runPitchPractice() {
     { video: "PT_LOW2.mp4", correct: "low" }
   ];
   let i = 0;
+  let practiceTrialNum = 1;
 
   function nextPractice() {
     if (i >= pitchPracticeTrials.length) {
       showPitchInstructions(); // → then instructions page
       return;
     }
-    const trial = pitchPracticeTrials[i++];
-    playPitchPracticeVideo(trial.video, trial.correct, nextPractice);
+    const trial = pitchPracticeTrials[i];
+    const proceed = () => {
+      i++;
+      practiceTrialNum++;
+      nextPractice();
+    };
+    playPitchPracticeVideo(trial.video, trial.correct, proceed, practiceTrialNum);
   }
 
   nextPractice();
 }
-function playPitchPracticeVideo(videoFile, correctAnswer, callback) {
+function playPitchPracticeVideo(videoFile, correctAnswer, callback, trialNumber) {
   updateScreen(`
     <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:white;">
       <video id="practiceVideo" playsinline autoplay style="width:100%; height:100%; object-fit:contain; background:white;">
@@ -694,14 +743,14 @@ function playPitchPracticeVideo(videoFile, correctAnswer, callback) {
   const video = document.getElementById("practiceVideo");
   video.muted = false;
   video.onended = () => {
-    showPitchResponseScreen(correctAnswer, callback);
+    showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber);
   };
   video.play().catch(err => {
     console.warn("Autoplay issue or play failed:", err);
-    showPitchResponseScreen(correctAnswer, callback);
+    showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber);
   });
 }
-function showPitchResponseScreen(correctAnswer, callback) {
+function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber) {
   updateScreen(`
 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
     background: white;
@@ -718,8 +767,12 @@ function showPitchResponseScreen(correctAnswer, callback) {
     </div>
   `);
 
-  const buttons = document.querySelectorAll('.tempo-btn');
+ const buttons = document.querySelectorAll('.tempo-btn');
   let answered = false;
+  const responseStart = performance.now();
+  const feedbackEl = document.getElementById("feedback");
+  const correctSound = document.getElementById("correctSound");
+  const wrongSound = document.getElementById("wrongSound");
 
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -728,21 +781,44 @@ function showPitchResponseScreen(correctAnswer, callback) {
       const choice = btn.getAttribute('data-choice');
       buttons.forEach(b => b.disabled = true);
 
-      if (choice === correctAnswer) {
-        document.getElementById("feedback").style.color = "green";
-        document.getElementById("feedback").innerText = "Correct!";
-        document.getElementById("correctSound").play().catch(() => {});
-        setTimeout(callback, 1500);
-} else {
-  document.getElementById("feedback").style.color = "red";
-  document.getElementById("feedback").innerText = "Oops! Let's try that one again.";
-  document.getElementById("wrongSound").play().catch(() => {});
+      const reactionTimeSec = parseFloat(((performance.now() - responseStart) / 1000).toFixed(3));
+      const entry = {
+        participant: participantID,
+        session: sessionID,
+        block: "pitch_practice",
+        trial_num: trialNumber,
+        timestamp: new Date().toISOString(),
+        choice,
+        audio: videoFile,
+        correct_answer: correctAnswer,
+        reaction_time_sec: reactionTimeSec,
+        phase: "practice"
+      };
 
-  setTimeout(() => {
-    // Replay the same trial video
-    playPitchPracticeVideo(`${correctAnswer === "high" ? "PT_HIGH2.mp4" : "PT_LOW2.mp4"}`, correctAnswer, callback);
-  }, 4000);
-}
+      saveResponse(entry)
+        .then(() => {
+          if (choice === correctAnswer) {
+            feedbackEl.style.color = "green";
+            feedbackEl.innerText = "Correct!";
+            correctSound.play().catch(() => {});
+            setTimeout(callback, 1500);
+          } else {
+            feedbackEl.style.color = "red";
+            feedbackEl.innerText = "Oops! Let's try that one again.";
+            wrongSound.play().catch(() => {});
+
+            setTimeout(() => {
+              // Replay the same trial video
+              playPitchPracticeVideo(videoFile, correctAnswer, callback, trialNumber);
+            }, 4000);
+          }
+        })
+        .catch(() => {
+          feedbackEl.style.color = "red";
+          feedbackEl.innerText = "We couldn't save your answer. Please try again.";
+          answered = false;
+          buttons.forEach(b => b.disabled = false);
+        });
 
     });
   });
@@ -1036,7 +1112,7 @@ function handleResponse(choice) {
   const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
   const correctAnswer = isNormal ? "normal" : "magical";
 
-  const entry = {
+const entry = {
     participant: participantID,
     session: sessionID,
     block: BLOCK_ORDER[currentBlockIndex],
@@ -1045,14 +1121,11 @@ function handleResponse(choice) {
     choice,
     audio: currentAudioFile,
     correct_answer: correctAnswer,
-    reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3))
+    reaction_time_sec: parseFloat(reactionTimeSec.toFixed(3)),
+    phase: "real"
   };
 
-  fetch("https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entry)
-  })
+  saveResponse(entry)
   .then(() => {
     trialsInCurrentBlock++;
     trialCounter++;
@@ -1297,6 +1370,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
