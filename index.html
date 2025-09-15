@@ -532,14 +532,22 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback, trialNumber)
 
 function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber) {
   updateScreen(`
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
-        background: white;
-        padding: 20px;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: white; padding: 20px;">
       <h1 style="color: #4b2e83; margin-top: 30px;">How did the music sound?</h1>
+      <audio id="tempoPromptAudio" src="tempo_prompt.mp3"></audio>
       <div style="display: flex; gap: 40px; margin-top: 20px;">
-        <button class="tempo-btn" data-choice="fast" style="margin-top:30px;font-size:1em;">Fast</button>
-        <button class="tempo-btn" data-choice="slow" style="margin-top:30px;font-size:1em;">Slow</button>
-        <button class="tempo-btn" data-choice="same" style="margin-top:30px;font-size:1em;">Same</button>
+        <button class="tempo-btn" data-choice="fast" style="margin-top:30px;font-size:1em;">
+          Fast<br>
+          <img src="fast_icon.png" alt="Fast" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+        </button>
+        <button class="tempo-btn" data-choice="slow" style="margin-top:30px;font-size:1em;">
+          Slow<br>
+          <img src="slow_icon.png" alt="Slow" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+        </button>
+        <button class="tempo-btn" data-choice="same" style="margin-top:30px;font-size:1em;">
+          Same<br>
+          <img src="same_icon.png" alt="Same" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+        </button>
       </div>
       <audio id="correctSound" src="correct_feedback.mp3"></audio>
       <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
@@ -547,6 +555,10 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
     </div>
   `);
 
+  // Play prompt narration
+  const promptAudio = document.getElementById("tempoPromptAudio");
+  promptAudio.play().catch(()=>{});
+  
   const buttons = document.querySelectorAll('.tempo-btn');
   let answered = false;
   const responseStart = performance.now();
@@ -750,16 +762,25 @@ function playPitchPracticeVideo(videoFile, correctAnswer, callback, trialNumber)
     showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber);
   });
 }
-function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber) {
+
+  function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber) {
   updateScreen(`
-<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
-    background: white;
-    padding: 20px;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: white; padding: 20px;">
       <h1 style="color: #4b2e83; margin-top: 30px;">How did the pitch sound?</h1>
+      <audio id="pitchPromptAudio" src="pitch_prompt.mp3"></audio>
       <div style="display: flex; gap: 40px; margin-top: 20px;">
-        <button class="tempo-btn" data-choice="high" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">High</button>
-        <button class="tempo-btn" data-choice="low" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Low</button>
-        <button class="tempo-btn" data-choice="same" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">Same</button>
+        <button class="tempo-btn" data-choice="high" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">
+          High<br>
+          <img src="high_icon.png" alt="High" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+        </button>
+        <button class="tempo-btn" data-choice="low" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">
+          Low<br>
+          <img src="low_icon.png" alt="Low" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+        </button>
+        <button class="tempo-btn" data-choice="same" style="padding: 14px 28px; font-size: 1.2em; border-radius: 10px;">
+          Same<br>
+          <img src="same_icon.png" alt="Same" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+        </button>
       </div>
       <audio id="correctSound" src="correct_feedback.mp3"></audio>
       <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
@@ -767,6 +788,10 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
     </div>
   `);
 
+  // Play prompt narration
+  const promptAudio = document.getElementById("pitchPromptAudio");
+  promptAudio.play().catch(()=>{});
+    
  const buttons = document.querySelectorAll('.tempo-btn');
   let answered = false;
   const responseStart = performance.now();
@@ -1370,6 +1395,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
