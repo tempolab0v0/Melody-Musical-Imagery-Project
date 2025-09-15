@@ -620,11 +620,6 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
   if (tempoPromptAudio) {
     tempoPromptAudio.play().catch(() => {});
   }
-  // Play prompt narration
-const tempoPromptAudio = document.getElementById("tempoPromptAudio");
-  if (tempoPromptAudio) {
-    tempoPromptAudio.play().catch(() => {});
-  }
   
   const buttons = document.querySelectorAll('.tempo-btn');
   let answered = false;
@@ -1462,6 +1457,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
