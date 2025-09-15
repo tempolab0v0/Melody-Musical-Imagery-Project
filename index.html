@@ -85,21 +85,65 @@
     }
     .btn-primary:hover{transform:scale(1.05); box-shadow:0 6px 18px rgba(75,46,131,.4);}
 
-.tempo-btn, .elevator-option {
+.response-options {
+    display: flex;
+    gap: clamp(24px, 6vw, 48px);
+    margin-top: clamp(16px, 4vh, 32px);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .tempo-btn {
     cursor: pointer;
-    transition: transform .2s;
-    padding: 32px 32px;
-    font-size: 2em;
+    transition: transform .2s, box-shadow .2s;
+    padding: clamp(24px, 4vw, 32px);
+    font-size: 1rem;
     border-radius: 20px;
-    min-width: 180px;
-    min-height: 120px;
+    min-width: clamp(160px, 22vw, 220px);
+    min-height: clamp(140px, 26vh, 220px);
     box-shadow: 0 4px 18px rgba(75,46,131,.12);
     background: linear-gradient(135deg,#f3e7ff,#d0b3ff);
     color: #4b2e83;
     font-weight: bold;
     margin-bottom: 10px;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(10px, 3vh, 18px);
+    text-align: center;
   }
-  .tempo-btn:hover, .elevator-option:hover {
+
+  .tempo-btn:hover {
+    transform: scale(1.07);
+    box-shadow: 0 8px 24px rgba(75,46,131,.18);
+  }
+
+  .tempo-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 4px 18px rgba(75,46,131,.12);
+  }
+
+  .tempo-btn .option-icon {
+    width: clamp(52px, 12vw, 88px);
+    height: auto;
+  }
+
+  .tempo-btn span {
+    font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  }
+
+  .elevator-option {
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+    border-radius: 20px;
+    box-shadow: 0 4px 18px rgba(75,46,131,.12);
+  }
+
+  .elevator-option:hover {
     transform: scale(1.07);
     box-shadow: 0 8px 24px rgba(75,46,131,.18);
   }
@@ -373,7 +417,8 @@ function showNarrationScreen() {
       <div style="flex:1;display:flex;justify-content:center;">
         <img src="Melody.png" alt="Melody character" style="max-height:80vh;max-width:90%;border-radius:20px;" />
       </div>
-      <div style="flex:1;text-align:center;padding:30px;">
+<div style="flex:1;text-align:center;padding:30px;">
+        <button id="playNarration" class="btn-primary" style="margin-bottom:24px;font-size:1em;">Click to Play</button>
         <p style="font-size:1.3em;line-height:1.8;">
          The magical elevator can do all sorts of silly things to the music!<br>
           Sometimes it makes the music go faster or slower.<br>
@@ -381,7 +426,6 @@ function showNarrationScreen() {
           And when the doors open we might meet an animal pal with a fun move to try!<br><br>
           Let’s practice together so you know what to listen for!
         </p>
-        <button id="playNarration" class="btn-primary" style="margin-top:20px;font-size:1em;">Click to Play</button>
         <audio id="introNarration3" src="intro_narration3.mp3"></audio>
       </div>
     </div>
@@ -551,20 +595,19 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
   updateScreen(`
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: white; padding: 20px;">
       <audio id="tempoPromptAudio" src="tempo_prompt.mp3"></audio>
-      <button id="playTempoPrompt" class="btn-primary" style="margin-bottom:24px;">Click to Play</button>
       <h1 style="color: #4b2e83; margin-top: 10px;">How did the music sound?</h1>
-      <div style="display: flex; gap: 40px; margin-top: 20px;">
+      <div class="response-options">
         <button class="tempo-btn" data-choice="fast">
-          Fast<br>
-          <img src="fast_icon.png" alt="Fast" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+          <img src="fast_icon.png" alt="Fast" class="option-icon" />
+          <span>Fast</span>
         </button>
         <button class="tempo-btn" data-choice="slow">
-          Slow<br>
-          <img src="slow_icon.png" alt="Slow" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+          <img src="slow_icon.png" alt="Slow" class="option-icon" />
+          <span>Slow</span>
         </button>
         <button class="tempo-btn" data-choice="same">
-          Same<br>
-          <img src="same_icon.png" alt="Same" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+          <img src="same_icon.png" alt="Same" class="option-icon" />
+          <span>Same</span>
         </button>
       </div>
       <audio id="correctSound" src="correct_feedback.mp3"></audio>
@@ -573,10 +616,15 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
     </div>
   `);
 
+  const tempoPromptAudio = document.getElementById("tempoPromptAudio");
+  if (tempoPromptAudio) {
+    tempoPromptAudio.play().catch(() => {});
+  }
   // Play prompt narration
-document.getElementById("playTempoPrompt").onclick = () => {
-    document.getElementById("tempoPromptAudio").play().catch(()=>{});
-  };
+const tempoPromptAudio = document.getElementById("tempoPromptAudio");
+  if (tempoPromptAudio) {
+    tempoPromptAudio.play().catch(() => {});
+  }
   
   const buttons = document.querySelectorAll('.tempo-btn');
   let answered = false;
@@ -786,20 +834,19 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
   updateScreen(`
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: white; padding: 20px;">
       <audio id="pitchPromptAudio" src="pitch_prompt.mp3"></audio>
-      <button id="playPitchPrompt" class="btn-primary" style="margin-bottom:24px;">Click to Play</button>
       <h1 style="color: #4b2e83; margin-top: 10px;">How did the pitch sound?</h1>
-      <div style="display: flex; gap: 40px; margin-top: 20px;">
+      <div class="response-options">
         <button class="tempo-btn" data-choice="high">
-          High<br>
-          <img src="high_icon.png" alt="High" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+          <img src="high_icon.png" alt="High" class="option-icon" />
+          <span>High</span>
         </button>
         <button class="tempo-btn" data-choice="low">
-          Low<br>
-          <img src="low_icon.png" alt="Low" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+          <img src="low_icon.png" alt="Low" class="option-icon" />
+          <span>Low</span>
         </button>
         <button class="tempo-btn" data-choice="same">
-          Same<br>
-          <img src="same_icon.png" alt="Same" style="width:60px;display:block;margin:8px auto 0 auto;"/>
+          <img src="same_icon.png" alt="Same" class="option-icon" />
+          <span>Same</span>
         </button>
       </div>
       <audio id="correctSound" src="correct_feedback.mp3"></audio>
@@ -807,12 +854,12 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
       <div id="feedback" style="margin-top: 20px; font-size: 1.2em; color: red;"></div>
     </div>
   `);
-  // Play prompt narration
-  document.getElementById("playPitchPrompt").onclick = () => {
-    document.getElementById("pitchPromptAudio").play().catch(()=>{});
-  };
-    
- const buttons = document.querySelectorAll('.tempo-btn');
+  const pitchPromptAudio = document.getElementById("pitchPromptAudio");
+  if (pitchPromptAudio) {
+    pitchPromptAudio.play().catch(() => {});
+  }
+  
+  const buttons = document.querySelectorAll('.tempo-btn');
   let answered = false;
   const responseStart = performance.now();
   const feedbackEl = document.getElementById("feedback");
@@ -912,6 +959,8 @@ function showRealTrialsIntro() {
       background: white;
       padding:40px;box-sizing:border-box;">
       <h1 style="color:#4b2e83; font-size:2em; margin-bottom:20px;">Amazing work!</h1>
+      <audio id="realInstructionsAudio" src="real_trials_instructions.mp3"></audio>
+      <button id="playRealInstructions" class="btn-primary" style="margin-bottom:24px;">Click to Play Instructions</button>
       <p style="max-width:800px; font-size:1.3em; text-align:center; line-height:1.6; margin-bottom:20px;">
         I need your help! This time, when I get in the elevator you will stay outside. When the door closes,  <br>
 you won’t hear the song anymore even though it will keep playing in the elevator for me. Keep singing the song in your head <br>
@@ -924,8 +973,6 @@ Then, choose which elevator I rode: the normal one, or the magical one! <br><br>
  Let’s go!
 <br><br>
       </p>
-      <audio id="realInstructionsAudio" src="real_trials_instructions.mp3"></audio>
-      <button id="playRealInstructions" class="btn-primary" style="margin-top:20px;">Click to Play Instructions</button>
       <button id="startRealTrials" class="btn-primary" style="display:none; margin-top:20px;">Start Real Trials</button>
     </div>
   `);
@@ -1415,6 +1462,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
