@@ -220,6 +220,40 @@ let completedTrials=0;
 let animalIndex = 0; // add near the top of your script
 let currentAnimalAudio = null;
 
+function waitForAudioReady(audioEl) {
+  return new Promise((resolve, reject) => {
+    const haveEnough =
+      typeof HTMLMediaElement !== "undefined" && HTMLMediaElement.HAVE_ENOUGH_DATA
+        ? HTMLMediaElement.HAVE_ENOUGH_DATA
+        : 4;
+
+    if (audioEl.readyState >= haveEnough) {
+      resolve();
+      return;
+    }
+
+    const cleanup = () => {
+      audioEl.removeEventListener("canplaythrough", onReady);
+      audioEl.removeEventListener("loadeddata", onReady);
+      audioEl.removeEventListener("error", onError);
+    };
+
+    const onReady = () => {
+      cleanup();
+      resolve();
+    };
+
+    const onError = () => {
+      cleanup();
+      reject(new Error("Audio failed to load."));
+    };
+
+    audioEl.addEventListener("canplaythrough", onReady, { once: true });
+    audioEl.addEventListener("loadeddata", onReady, { once: true });
+    audioEl.addEventListener("error", onError, { once: true });
+  });
+}
+
 // ---- WebAudio booster (gesture-safe) ---------------------------------
 const AudioEngine = (() => {
   let ctx = null, comp = null;
@@ -567,7 +601,6 @@ function runTempoPractice() {
 
   nextPractice();
 }
-
 
 function playTempoPracticeVideo(videoFile, correctAnswer, callback, trialNumber) {
   updateScreen(`
@@ -1124,8 +1157,14 @@ async function playTrial() {
   visuals[4].start = t; visuals[4].end = t += video2Sec;
   visuals[5].start = t; visuals[5].end = t += postStillSec;
 
-  await new Promise((resolve) => { audio.oncanplaythrough = resolve; });
-  trialStartTime = performance.now();
+try {
+    await waitForAudioReady(audio);
+  } catch (err) {
+    console.error("Unable to start trial — audio failed to load.", err);
+    updateScreen('<h2>Error: the audio file could not be loaded. Please try again.</h2>');
+    updatePlayButton();
+    return;
+  }  trialStartTime = performance.now();
 
   let currentVisual = null;
 
@@ -1457,6 +1496,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
