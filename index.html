@@ -85,57 +85,93 @@
     }
     .btn-primary:hover{transform:scale(1.05); box-shadow:0 6px 18px rgba(75,46,131,.4);}
 
-.response-options {
+.response-wrapper {
+    width: 100%;
+    height: 100%;
     display: flex;
-    gap: clamp(24px, 6vw, 48px);
-    margin-top: clamp(16px, 4vh, 32px);
+    align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
+    padding: clamp(20px, 5vw, 56px);
+    box-sizing: border-box;
+  }
+
+.response-screen {
+    width: min(920px, 100%);
+    margin: 0 auto;
+    background: linear-gradient(145deg, #ffffff, #f5ecff);
+    border-radius: 28px;
+    padding: clamp(20px, 4vw, 42px);
+    box-shadow: 0 24px 50px rgba(75,46,131,.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: clamp(16px, 3vh, 28px);
+  }
+
+  .response-screen h1 {
+    margin: 0;
+    color: #4b2e83;
+    font-size: clamp(1.5rem, 4vw, 2.4rem);
+  }
+
+.response-options {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: clamp(18px, 4vw, 32px);
   }
 
 .tempo-btn {
     cursor: pointer;
     transition: transform .2s, box-shadow .2s;
-    padding: clamp(18px, 3vw, 26px);
-    font-size: 1rem;
-    border-radius: 20px;
-    min-width: clamp(140px, 20vw, 200px);
-    min-height: clamp(120px, 20vh, 180px);
-    box-shadow: 0 4px 18px rgba(75,46,131,.12);
+    padding: clamp(16px, 3.5vw, 28px);
+    border-radius: 24px;
+    border: none;
+    width: 100%;
+    min-height: clamp(140px, 22vh, 210px);
     background: linear-gradient(135deg,#f3e7ff,#d0b3ff);
     color: #4b2e83;
-    font-weight: bold;
-    margin-bottom: 10px;
-    border: none;
+    font-weight: 700;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: clamp(8px, 2.5vh, 16px);
+    gap: clamp(10px, 2.8vh, 18px);
+    box-shadow: 0 8px 26px rgba(75,46,131,.16);
     text-align: center;
   }
-    
+
   .tempo-btn:hover {
-    transform: scale(1.07);
-    box-shadow: 0 8px 24px rgba(75,46,131,.18);
+    transform: translateY(-4px);
+    box-shadow: 0 14px 32px rgba(75,46,131,.22);
   }
 
   .tempo-btn:disabled {
-    opacity: .6;
+    opacity: .65;
     cursor: not-allowed;
     transform: none;
-    box-shadow: 0 4px 18px rgba(75,46,131,.12);
+    box-shadow: 0 8px 26px rgba(75,46,131,.16);
   }
 
   .tempo-btn .option-icon {
-    width: clamp(40px, 10vw, 64px);
-    height: auto;
+    width: clamp(48px, 12vw, 72px);
+    height: clamp(48px, 12vw, 72px);
+    object-fit: contain;
   }
 
   .tempo-btn span {
-    font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+    font-size: clamp(1.1rem, 2.8vw, 1.6rem);
+    letter-spacing: 0.02em;
   }
 
+  .response-feedback {
+    margin-top: clamp(12px, 3vh, 20px);
+    font-size: clamp(1.1rem, 2.8vw, 1.5rem);
+    font-weight: 600;
+    color: #4b2e83;
+  }
+    
   .elevator-option {
     cursor: pointer;
     transition: transform .2s, box-shadow .2s;
@@ -626,26 +662,28 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback, trialNumber)
 
 function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber) {
   updateScreen(`
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: white; padding: 20px;">
-      <audio id="tempoPromptAudio" src="tempo_prompt.mp3"></audio>
-      <h1 style="color: #4b2e83; margin-top: 10px;">How did the music sound?</h1>
-      <div class="response-options">
-        <button class="tempo-btn" data-choice="fast">
-          <img src="fast_icon.jpg" alt="Fast" class="option-icon" />
-          <span>Fast</span>
-        </button>
-        <button class="tempo-btn" data-choice="slow">
-          <img src="slow_icon.jpg" alt="Slow" class="option-icon" />
-          <span>Slow</span>
-        </button>
-        <button class="tempo-btn" data-choice="same">
-          <img src="same_icon.jpg" alt="Same" class="option-icon" />
-          <span>Same</span>
-        </button>
+    <div class="response-wrapper">
+      <div class="response-screen">
+        <audio id="tempoPromptAudio" src="tempo_prompt.mp3"></audio>
+        <h1>How did the music sound?</h1>
+        <div class="response-options">
+          <button class="tempo-btn" data-choice="fast">
+            <img src="fast_icon.jpg" alt="Fast" class="option-icon" />
+            <span>Fast</span>
+          </button>
+          <button class="tempo-btn" data-choice="slow">
+            <img src="slow_icon.jpg" alt="Slow" class="option-icon" />
+            <span>Slow</span>
+          </button>
+          <button class="tempo-btn" data-choice="same">
+            <img src="same_icon.jpg" alt="Same" class="option-icon" />
+            <span>Same</span>
+          </button>
+        </div>
+        <audio id="correctSound" src="correct_feedback.mp3"></audio>
+        <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
+        <div id="feedback" class="response-feedback" role="status" aria-live="polite"></div>
       </div>
-      <audio id="correctSound" src="correct_feedback.mp3"></audio>
-      <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
-      <div id="feedback" style="margin-top: 20px; font-size: 1.2em; color: red;"></div>
     </div>
   `);
 
@@ -654,12 +692,14 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
     tempoPromptAudio.play().catch(() => {});
   }
   
-  const buttons = document.querySelectorAll('.tempo-btn');
+   const buttons = document.querySelectorAll('.tempo-btn');
   let answered = false;
   const responseStart = performance.now();
   const feedbackEl = document.getElementById("feedback");
   const correctSound = document.getElementById("correctSound");
   const wrongSound = document.getElementById("wrongSound");
+  const successColor = "#2e7d32";
+  const errorColor = "#c62828";
 
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -684,13 +724,13 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
 
       saveResponse(entry)
         .then(() => {
-          if (userChoice === correctAnswer) {
-            feedbackEl.style.color = "green";
+            if (userChoice === correctAnswer) {
+            feedbackEl.style.color = successColor;
             feedbackEl.innerText = "Correct!";
             correctSound.play().catch(() => {});
             setTimeout(callback, 1500);
           } else {
-            feedbackEl.style.color = "red";
+            feedbackEl.style.color = errorColor;
             feedbackEl.innerText = "Oops! Let's try that one again.";
             wrongSound.play().catch(() => {});
             setTimeout(() => {
@@ -704,8 +744,8 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
             }, 4000);
           }
         })
-        .catch(() => {
-          feedbackEl.style.color = "red";
+      .catch(() => {
+          feedbackEl.style.color = errorColor;
           feedbackEl.innerText = "We couldn't save your answer. Please try again.";
           answered = false;
           buttons.forEach(b => b.disabled = false);
@@ -862,28 +902,31 @@ function playPitchPracticeVideo(videoFile, correctAnswer, callback, trialNumber)
 
 function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber) {
   updateScreen(`
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: white; padding: 20px;">
-      <audio id="pitchPromptAudio" src="pitch_prompt.mp3"></audio>
-      <h1 style="color: #4b2e83; margin-top: 10px;">How did the pitch sound?</h1>
-      <div class="response-options">
-        <button class="tempo-btn" data-choice="high">
-          <img src="high_icon.jpg" alt="High" class="option-icon" />
-          <span>High</span>
-        </button>
-        <button class="tempo-btn" data-choice="low">
-          <img src="low_icon.jpg" alt="Low" class="option-icon" />
-          <span>Low</span>
-        </button>
-        <button class="tempo-btn" data-choice="same">
-          <img src="same_icon.jpg" alt="Same" class="option-icon" />
-          <span>Same</span>
-        </button>
+    <div class="response-wrapper">
+      <div class="response-screen">
+        <audio id="pitchPromptAudio" src="pitch_prompt.mp3"></audio>
+        <h1>How did the pitch sound?</h1>
+        <div class="response-options">
+          <button class="tempo-btn" data-choice="high">
+            <img src="high_icon.jpg" alt="High" class="option-icon" />
+            <span>High</span>
+          </button>
+          <button class="tempo-btn" data-choice="low">
+            <img src="low_icon.jpg" alt="Low" class="option-icon" />
+            <span>Low</span>
+          </button>
+          <button class="tempo-btn" data-choice="same">
+            <img src="same_icon.jpg" alt="Same" class="option-icon" />
+            <span>Same</span>
+          </button>
+        </div>
+        <audio id="correctSound" src="correct_feedback.mp3"></audio>
+        <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
+        <div id="feedback" class="response-feedback" role="status" aria-live="polite"></div>
       </div>
-      <audio id="correctSound" src="correct_feedback.mp3"></audio>
-      <audio id="wrongSound" src="wrong_feedback.mp3"></audio>
-      <div id="feedback" style="margin-top: 20px; font-size: 1.2em; color: red;"></div>
     </div>
   `);
+  
   const pitchPromptAudio = document.getElementById("pitchPromptAudio");
   if (pitchPromptAudio) {
     pitchPromptAudio.play().catch(() => {});
@@ -894,7 +937,9 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
   const responseStart = performance.now();
   const feedbackEl = document.getElementById("feedback");
   const correctSound = document.getElementById("correctSound");
-  const wrongSound = document.getElementById("wrongSound");
+const wrongSound = document.getElementById("wrongSound");
+  const successColor = "#2e7d32";
+  const errorColor = "#c62828";
 
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -919,13 +964,13 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
 
       saveResponse(entry)
         .then(() => {
-          if (choice === correctAnswer) {
-            feedbackEl.style.color = "green";
+       if (choice === correctAnswer) {
+            feedbackEl.style.color = successColor;
             feedbackEl.innerText = "Correct!";
             correctSound.play().catch(() => {});
             setTimeout(callback, 1500);
           } else {
-            feedbackEl.style.color = "red";
+            feedbackEl.style.color = errorColor;
             feedbackEl.innerText = "Oops! Let's try that one again.";
             wrongSound.play().catch(() => {});
 
@@ -941,7 +986,12 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
           answered = false;
           buttons.forEach(b => b.disabled = false);
         });
-
+ .catch(() => {
+          feedbackEl.style.color = errorColor;
+          feedbackEl.innerText = "We couldn't save your answer. Please try again.";
+          answered = false;
+          buttons.forEach(b => b.disabled = false);
+        });
     });
   });
 }
@@ -1498,6 +1548,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
