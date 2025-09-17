@@ -921,17 +921,32 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
     </div>
   `);
 
-  const pitchPromptAudio = document.getElementById("pitchPromptAudio");
+ const pitchPromptAudio = document.getElementById("pitchPromptAudio");
   const buttons = document.querySelectorAll('.tempo-btn');
 
-  // Play the prompt and enable buttons after it ends
+  let buttonsEnabled = false;
+  const enableButtons = () => {
+    if (buttonsEnabled) return;
+    buttonsEnabled = true;
+    buttons.forEach(btn => {
+      btn.disabled = false;
+    });
+  };
+
+  // Play the prompt and enable buttons after it ends.
+  // If playback fails (missing file, autoplay blocked, etc.) we still
+  // enable the buttons so the participant can respond.
   if (pitchPromptAudio) {
-    pitchPromptAudio.play().catch(() => {});
-    pitchPromptAudio.onended = () => {
-      buttons.forEach(btn => btn.disabled = false);
-    };
+    pitchPromptAudio.addEventListener('ended', enableButtons);
+    pitchPromptAudio.addEventListener('error', enableButtons);
+    const playPromise = pitchPromptAudio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        enableButtons();
+      });
+    }
   } else {
-    buttons.forEach(btn => btn.disabled = false);
+    enableButtons();
   }
 
   let answered = false;
@@ -1543,6 +1558,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
