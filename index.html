@@ -980,13 +980,7 @@ const wrongSound = document.getElementById("wrongSound");
             }, 4000);
           }
         })
-        .catch(() => {
-          feedbackEl.style.color = "red";
-          feedbackEl.innerText = "We couldn't save your answer. Please try again.";
-          answered = false;
-          buttons.forEach(b => b.disabled = false);
-        });
- .catch(() => {
+  .catch(() => {
           feedbackEl.style.color = errorColor;
           feedbackEl.innerText = "We couldn't save your answer. Please try again.";
           answered = false;
@@ -1548,6 +1542,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
