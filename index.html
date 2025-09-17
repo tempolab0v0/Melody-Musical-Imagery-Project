@@ -377,11 +377,10 @@ window.onload = async () => {
     await AudioEngine.start();
     AudioEngine.attachAll(document);               // wire everything now that ctx is allowed
 
-    // Rebalance: louder videos, softer narration
-    AudioEngine.setGroupGain("video", 3.5);
+    AudioEngine.setGroupGain("video", 5.0); 
     AudioEngine.setGroupGain("music", 1.3);
-    AudioEngine.setGroupGain("narration", 0.8);
-    AudioEngine.setGroupGain("sfx", 0.8);
+    AudioEngine.setGroupGain("narration", 0.6);
+    AudioEngine.setGroupGain("sfx", 0.6);
   };
   window.addEventListener("click", prime, { once: true });
   window.addEventListener("touchend", prime, { once: true });
@@ -667,15 +666,15 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
         <audio id="tempoPromptAudio" src="tempo_prompt.mp3"></audio>
         <h1>How did the music sound?</h1>
         <div class="response-options">
-          <button class="tempo-btn" data-choice="fast">
+          <button class="tempo-btn" data-choice="fast" disabled>
             <img src="fast_icon.jpg" alt="Fast" class="option-icon" />
             <span>Fast</span>
           </button>
-          <button class="tempo-btn" data-choice="slow">
+          <button class="tempo-btn" data-choice="slow" disabled>
             <img src="slow_icon.jpg" alt="Slow" class="option-icon" />
             <span>Slow</span>
           </button>
-          <button class="tempo-btn" data-choice="same">
+          <button class="tempo-btn" data-choice="same" disabled>
             <img src="same_icon.jpg" alt="Same" class="option-icon" />
             <span>Same</span>
           </button>
@@ -688,11 +687,16 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
   `);
 
   const tempoPromptAudio = document.getElementById("tempoPromptAudio");
+  const buttons = document.querySelectorAll('.tempo-btn');
   if (tempoPromptAudio) {
     tempoPromptAudio.play().catch(() => {});
+    tempoPromptAudio.onended = () => {
+      buttons.forEach(btn => btn.disabled = false);
+    };
+  } else {
+    buttons.forEach(btn => btn.disabled = false);
   }
-  
-   const buttons = document.querySelectorAll('.tempo-btn');
+
   let answered = false;
   const responseStart = performance.now();
   const feedbackEl = document.getElementById("feedback");
@@ -734,7 +738,6 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
             feedbackEl.innerText = "Oops! Let's try that one again.";
             wrongSound.play().catch(() => {});
             setTimeout(() => {
-              // replay the same trial video again
               playTempoPracticeVideo(
                 videoFile,
                 correctAnswer,
@@ -753,7 +756,6 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
     });
   });
 }
-  
 
 function runPitchDemo() {
   updateScreen(`
@@ -907,15 +909,15 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
         <audio id="pitchPromptAudio" src="pitch_prompt.mp3"></audio>
         <h1>How did the pitch sound?</h1>
         <div class="response-options">
-          <button class="tempo-btn" data-choice="high">
+          <button class="tempo-btn" data-choice="high" disabled>
             <img src="high_icon.jpg" alt="High" class="option-icon" />
             <span>High</span>
           </button>
-          <button class="tempo-btn" data-choice="low">
+          <button class="tempo-btn" data-choice="low" disabled>
             <img src="low_icon.jpg" alt="Low" class="option-icon" />
             <span>Low</span>
           </button>
-          <button class="tempo-btn" data-choice="same">
+          <button class="tempo-btn" data-choice="same" disabled>
             <img src="same_icon.jpg" alt="Same" class="option-icon" />
             <span>Same</span>
           </button>
@@ -926,18 +928,23 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
       </div>
     </div>
   `);
-  
+
   const pitchPromptAudio = document.getElementById("pitchPromptAudio");
+  const buttons = document.querySelectorAll('.tempo-btn');
   if (pitchPromptAudio) {
     pitchPromptAudio.play().catch(() => {});
+    pitchPromptAudio.onended = () => {
+      buttons.forEach(btn => btn.disabled = false);
+    };
+  } else {
+    buttons.forEach(btn => btn.disabled = false);
   }
-  
-  const buttons = document.querySelectorAll('.tempo-btn');
+
   let answered = false;
   const responseStart = performance.now();
   const feedbackEl = document.getElementById("feedback");
   const correctSound = document.getElementById("correctSound");
-const wrongSound = document.getElementById("wrongSound");
+  const wrongSound = document.getElementById("wrongSound");
   const successColor = "#2e7d32";
   const errorColor = "#c62828";
 
@@ -975,12 +982,11 @@ const wrongSound = document.getElementById("wrongSound");
             wrongSound.play().catch(() => {});
 
             setTimeout(() => {
-              // Replay the same trial video
               playPitchPracticeVideo(videoFile, correctAnswer, callback, trialNumber);
             }, 4000);
           }
         })
-  .catch(() => {
+ .catch(() => {
           feedbackEl.style.color = errorColor;
           feedbackEl.innerText = "We couldn't save your answer. Please try again.";
           answered = false;
@@ -1349,7 +1355,7 @@ function showAnimalScreen(callback) {
       <img src="${animal.image}" alt="${animal.name}" style="max-width:40%;height:auto;margin-bottom:20px;"/>
       <h2>Ding! We stopped at the ${animal.name}'s floor!</h2>
       <p style="margin-top:10px;font-size:1.2em;">${animal.action} Then click Continue to ride again.</p>
-      <button id="continueAnimal" class="btn-primary" style="margin-top:20px;" type="button">Continue</button>
+      <button id="continueAnimal" class="btn-primary" style="margin-top:20px;" type="button" disabled>Continue (<span id="animalCountdown">45</span>s)</button>
     </div>
   `);
 
@@ -1363,6 +1369,21 @@ function showAnimalScreen(callback) {
   }
 
   const btn = document.getElementById("continueAnimal");
+  const countdownEl = document.getElementById("animalCountdown");
+  let secondsLeft = 45;
+  btn.disabled = true;
+
+  // Countdown timer
+  const timer = setInterval(() => {
+    secondsLeft--;
+    countdownEl.textContent = secondsLeft;
+    if (secondsLeft <= 0) {
+      clearInterval(timer);
+      btn.disabled = false;
+      btn.textContent = "Continue";
+    }
+  }, 1000);
+
   btn.addEventListener("click", () => {
     // Stop any ongoing animal audio immediately
     if (currentAnimalAudio) {
@@ -1542,6 +1563,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
