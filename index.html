@@ -378,7 +378,7 @@ window.onload = async () => {
     AudioEngine.attachAll(document);               // wire everything now that ctx is allowed
 
     AudioEngine.setGroupGain("video", 5.0); 
-    AudioEngine.setGroupGain("music", 1.3);
+    AudioEngine.setGroupGain("music", 3.0);
     AudioEngine.setGroupGain("narration", 0.6);
     AudioEngine.setGroupGain("sfx", 0.6);
   };
@@ -1377,7 +1377,7 @@ function showAnimalScreen(callback) {
 
   const btn = document.getElementById("continueAnimal");
   const countdownEl = document.getElementById("animalCountdown");
-  let secondsLeft = 45;
+  let secondsLeft = 30;
   btn.disabled = true;
 
   // Countdown timer
@@ -1406,7 +1406,6 @@ function showAnimalScreen(callback) {
   }, { once: true });
 }
   
-// call like: showParty({ onDone: () => nextScreen() })
 function showParty({ onDone } = {}) {
   // ---- quick CSS (animations + grid) ----
   const css = `
@@ -1443,10 +1442,8 @@ function showParty({ onDone } = {}) {
       </div>
       <div id="party-cta">
         <button id="startParty" class="btn">Start the party 🎈</button>
-        <button id="replayParty" class="btn" disabled>Replay</button>
         ${onDone ? `<button id="continueBtn" class="btn">Continue ▶</button>` : ``}
       </div>
-      <div style="font-size:13px;color:#666">Tip: turn sound on for music + narration</div>
     </div>
   `);
 
@@ -1465,12 +1462,10 @@ function showParty({ onDone } = {}) {
   outro.volume = 0.95 * narrationGain;
 
   const startBtn = document.getElementById('startParty');
-  const replayBtn = document.getElementById('replayParty');
   const contBtn = document.getElementById('continueBtn');
 
   startBtn.addEventListener('click', async () => {
     startBtn.disabled = true;
-    replayBtn.disabled = true;
 
     // small sequence: cheer ➜ confetti burst ➜ bgm + narration
     burstConfetti(600); // 600 ms burst
@@ -1478,14 +1473,7 @@ function showParty({ onDone } = {}) {
     setTimeout(async () => {
       try { bgm.currentTime = 0; await bgm.play(); } catch {}
       try { outro.currentTime = 0; await outro.play(); } catch {}
-      replayBtn.disabled = false;
     }, 200);
-  });
-
-  replayBtn.addEventListener('click', () => {
-    burstConfetti(600);
-    try { cheer.currentTime = 0; cheer.play(); } catch {}
-    try { outro.currentTime = 0; outro.play(); } catch {}
   });
 
   contBtn?.addEventListener('click', () => {
@@ -1570,6 +1558,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
