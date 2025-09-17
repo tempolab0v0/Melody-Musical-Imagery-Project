@@ -898,6 +898,7 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
   updateScreen(`
     <div class="response-wrapper">
       <div class="response-screen">
+        <audio id="pitchResponseNarration" src="pitch_response_narration.mp3"></audio>
         <audio id="pitchPromptAudio" src="pitch_prompt.mp3"></audio>
         <h1>How did the pitch sound?</h1>
         <div class="response-options">
@@ -921,11 +922,26 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
     </div>
   `);
 
-  const pitchPromptAudio = document.getElementById("pitchPromptAudio");
+  // Play the narration first, then the prompt, then enable buttons
+  const narration = document.getElementById("pitchResponseNarration");
+  const prompt = document.getElementById("pitchPromptAudio");
   const buttons = document.querySelectorAll('.tempo-btn');
-  if (pitchPromptAudio) {
-    pitchPromptAudio.play().catch(() => {});
-    pitchPromptAudio.onended = () => {
+
+  if (narration) {
+    narration.play().catch(() => {});
+    narration.onended = () => {
+      if (prompt) {
+        prompt.play().catch(() => {});
+        prompt.onended = () => {
+          buttons.forEach(btn => btn.disabled = false);
+        };
+      } else {
+        buttons.forEach(btn => btn.disabled = false);
+      }
+    };
+  } else if (prompt) {
+    prompt.play().catch(() => {});
+    prompt.onended = () => {
       buttons.forEach(btn => btn.disabled = false);
     };
   } else {
@@ -963,7 +979,7 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
 
       saveResponse(entry)
         .then(() => {
-       if (choice === correctAnswer) {
+          if (choice === correctAnswer) {
             feedbackEl.style.color = successColor;
             feedbackEl.innerText = "Correct!";
             correctSound.play().catch(() => {});
@@ -972,13 +988,12 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
             feedbackEl.style.color = errorColor;
             feedbackEl.innerText = "Oops! Let's try that one again.";
             wrongSound.play().catch(() => {});
-
             setTimeout(() => {
               playPitchPracticeVideo(videoFile, correctAnswer, callback, trialNumber);
             }, 4000);
           }
         })
- .catch(() => {
+        .catch(() => {
           feedbackEl.style.color = errorColor;
           feedbackEl.innerText = "We couldn't save your answer. Please try again.";
           answered = false;
@@ -1246,7 +1261,6 @@ try {
     overlay.innerHTML += '<div style="color:red;font-size:1.5em;margin-top:20px;">Audio playback was blocked. Please click the button above to start the trial.</div>';
   }
 }
-
   
 function showResponseOptions() {
   updateScreen(`
@@ -1543,6 +1557,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
