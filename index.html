@@ -845,16 +845,23 @@ function showLowText() {
   }
 
   function showFinalText() {
-    updateScreen(`
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
-        <p style="font-size:1.5em;line-height:1.6;max-width:800px;text-align:center;">
-          Now, it’s your turn! Choose whether the music got higher, lower or stayed the same after the next rounds play.
-        </p>
-        <button id="startPitchPractice" class="btn-primary" style="margin-top:20px;">Start Practice</button>
-      </div>
-    `);
-    document.getElementById("startPitchPractice").addEventListener("click", runPitchPractice);
+  updateScreen(`
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
+      <p style="font-size:1.5em;line-height:1.6;max-width:800px;text-align:center;">
+        Now, it’s your turn! After each round, choose whether the music got higher, lower or stayed the same.
+      </p>
+      <audio id="finalNarration" src="PT_PITCH_FINAL.mp3"></audio>
+      <button id="startPitchPractice" class="btn-primary" style="margin-top:20px;">Start Practice</button>
+    </div>
+  `);
+
+  const audio = document.getElementById("finalNarration");
+  if (audio) {
+    audio.play().catch(() => {});
   }
+
+  document.getElementById("startPitchPractice").addEventListener("click", runPitchPractice);
+}
   
 function runPitchPractice() {
   const pitchPracticeTrials = [
@@ -1563,6 +1570,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
