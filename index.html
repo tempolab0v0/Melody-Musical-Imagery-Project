@@ -765,28 +765,20 @@ function runPitchDemo() {
         Now, the magical elevator is going to change how high or low the music sounds.<br>
         Ready? Listen to this song and see how the music gets higher when Melody rides the elevator up to the 2nd floor.
       </p>
-      <button id="playHighDemo" class="btn-primary" style="margin-top:20px; display:none;">Play</button>
       <audio id="pitchIntroNarration" src="PT_PITCH_INTRO.mp3" preload="auto"></audio>
     </div>
   `);
 
   const narrEl = document.getElementById("pitchIntroNarration");
-  const playBtn = document.getElementById("playHighDemo");
-
-  // Ensure AudioEngine wires the narration
   AudioEngine.attach(narrEl);
 
-  // Play narration automatically if possible, then show Play button
   narrEl.play()
     .then(() => {
-      narrEl.onended = () => { playBtn.style.display = "inline-block"; };
+      narrEl.onended = playHighDemo; // Auto-play demo after narration
     })
     .catch(() => {
-      // Autoplay blocked — just show the Play button immediately
-      playBtn.style.display = "inline-block";
+      playHighDemo(); // If autoplay blocked, just play demo
     });
-
-  playBtn.addEventListener("click", playHighDemo);
 }
 
 
@@ -809,27 +801,20 @@ function showLowText() {
         That was super high!<br><br>
         Let’s try another, but this time, the notes will go lower.
       </p>
-      <button id="playLowDemo" class="btn-primary" style="margin-top:20px; display:none;">Play</button>
       <audio id="lowIntroNarration" src="PT_LOW1_INTRO.mp3" preload="auto"></audio>
     </div>
   `);
 
   const narrEl = document.getElementById("lowIntroNarration");
-  const playBtn = document.getElementById("playLowDemo");
-
-  // Wire the narration audio into AudioEngine
   AudioEngine.attach(narrEl);
 
   narrEl.play()
     .then(() => {
-      narrEl.onended = () => { playBtn.style.display = "inline-block"; };
+      narrEl.onended = playLowDemo; // Auto-play demo after narration
     })
     .catch(() => {
-      // If autoplay is blocked, just show the Play button immediately
-      playBtn.style.display = "inline-block";
+      playLowDemo(); // If autoplay blocked, just play demo
     });
-
-  playBtn.addEventListener("click", playLowDemo);
 }
   
   function playLowDemo() {
@@ -1558,6 +1543,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
