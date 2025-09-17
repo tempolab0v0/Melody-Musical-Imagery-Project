@@ -898,7 +898,6 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
   updateScreen(`
     <div class="response-wrapper">
       <div class="response-screen">
-        <audio id="pitchResponseNarration" src="pitch_response_narration.mp3"></audio>
         <audio id="pitchPromptAudio" src="pitch_prompt.mp3"></audio>
         <h1>How did the pitch sound?</h1>
         <div class="response-options">
@@ -922,26 +921,13 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
     </div>
   `);
 
-  // Play the narration first, then the prompt, then enable buttons
-  const narration = document.getElementById("pitchResponseNarration");
-  const prompt = document.getElementById("pitchPromptAudio");
+  const pitchPromptAudio = document.getElementById("pitchPromptAudio");
   const buttons = document.querySelectorAll('.tempo-btn');
 
-  if (narration) {
-    narration.play().catch(() => {});
-    narration.onended = () => {
-      if (prompt) {
-        prompt.play().catch(() => {});
-        prompt.onended = () => {
-          buttons.forEach(btn => btn.disabled = false);
-        };
-      } else {
-        buttons.forEach(btn => btn.disabled = false);
-      }
-    };
-  } else if (prompt) {
-    prompt.play().catch(() => {});
-    prompt.onended = () => {
+  // Play the prompt and enable buttons after it ends
+  if (pitchPromptAudio) {
+    pitchPromptAudio.play().catch(() => {});
+    pitchPromptAudio.onended = () => {
       buttons.forEach(btn => btn.disabled = false);
     };
   } else {
@@ -1002,7 +988,7 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
     });
   });
 }
-
+  
 function showPitchInstructions() {
   setTimeout(() => {
     updateScreen(`
@@ -1557,6 +1543,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
