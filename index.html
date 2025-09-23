@@ -1267,10 +1267,11 @@ try {
     overlay.innerHTML += '<div style="color:red;font-size:1.5em;margin-top:20px;">Audio playback was blocked. Please click the button above to start the trial.</div>';
   }
 }
-  
+
 function showResponseOptions() {
   updateScreen(`
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: white;">
+      <audio id="elevatorQuestionAudio" src="elevator_question.mp3"></audio>
       <h1 style="color: #4b2e83;">Which elevator did Melody ride?</h1>
       <p style="max-width:600px;font-size:1.1em;margin-bottom:30px;">
         Now that the music is over, think back to how it sounded before and after the pause.<br><br>
@@ -1288,9 +1289,17 @@ function showResponseOptions() {
         </div>
       </div>
     </div>`);
+
+  // Play the narration automatically
+  const narration = document.getElementById("elevatorQuestionAudio");
+  if (narration) {
+    narration.play().catch(() => {});
+  }
+
   document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
   document.getElementById("magicalElevator").addEventListener("click", () => handleResponse("magical"), { once: true });
 }
+
 function handleResponse(choice) {
   if (responseSubmitted) return;
   responseSubmitted = true;
@@ -1585,6 +1594,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
