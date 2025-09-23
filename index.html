@@ -1145,11 +1145,11 @@ function showAutoplayOverlay(audio, callback) {
 }
 
 function updatePlayButton() {
-  const block = BLOCK_ORDER[currentBlockIndex];
   const trialControls = document.getElementById("trialControls");
-  trialControls.innerHTML = `<button id="playButton" class="btn-primary">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
+  trialControls.innerHTML = `<button id="playButton" class="btn-primary">Click here to Start!</button>`;
   document.getElementById("playButton").addEventListener("click", playTrial);
 }
+  
 function hideAll() {
   visuals.forEach(v => {
     v.el.style.display = "none";
@@ -1594,6 +1594,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
