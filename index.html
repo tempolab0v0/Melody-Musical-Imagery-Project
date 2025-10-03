@@ -229,7 +229,7 @@
   <div id="trialControls"></div>
 
 <script>  
-const TRIALS_PER_BLOCK= 12;
+const TRIALS_PER_BLOCK= 16;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
 const TOTAL_TRIALS = TRIALS_PER_BLOCK * BLOCK_ORDER.length;
@@ -1306,11 +1306,11 @@ function showResponseOptions() {
       <div style="display:flex;justify-content:center;gap:80px;">
         <div style="text-align:center;">
           <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator" style="width:300px;">
-          <div style="margin-top:12px;font-weight:bold;">Normal Elevator</div>
+          <div style="margin-top:px;font-weight:bold;">Normal Elevator</div>
         </div>
         <div style="text-align:center;">
           <img src="magical.png" class="elevator-option" id="magicalElevator" alt="Magical Elevator" style="width:300px;">
-          <div style="margin-top:12px;font-weight:bold;">Magical Elevator</div>
+          <div style="margin-top:px;font-weight:bold;">Magical Elevator</div>
         </div>
       </div>
     </div>`);
@@ -1460,7 +1460,7 @@ function showParty({ onDone, autoStart = false } = {}) {
   @keyframes wobble {0%,100%{transform:rotate(0)}50%{transform:rotate(-6deg)}}
   @keyframes hop {0%,100%{transform:translateY(0)}35%{transform:translateY(-10px)}}
   #party-cta {display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
-  .btn {padding:10px 14px;border:none;border-radius:999px;background:#4b2e83;color:#fff;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+  .btn {padding:10px 14px;border:none;border-radius:999px;background:#4b2e83;color:#fff;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.);}
   .btn:disabled{opacity:.6;cursor:not-allowed}
   #confetti {position:absolute; inset:0; pointer-events:none}
   `;
@@ -1619,6 +1619,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
