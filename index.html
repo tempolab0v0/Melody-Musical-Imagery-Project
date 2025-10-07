@@ -347,7 +347,7 @@ const AudioEngine = (() => {
     scope.querySelectorAll("audio, video").forEach(wire);
   }
 
-   function start() {
+  async function start() {
     if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
     try { await ctx.resume(); } catch {}
     ensureCompressor();
@@ -376,9 +376,9 @@ function saveResponse(entry) {
   });
 }
 
-window.onload =  () => {
+window.onload = async () => {
   // Prime WebAudio on first gesture (click/touch/key)
-  const prime =  () => {
+  const prime = async () => {
     await AudioEngine.start();
     AudioEngine.attachAll(document);               // wire everything now that ctx is allowed
 
@@ -1164,7 +1164,7 @@ function showAutoplayOverlay(audio, callback) {
     .getElementById("resumeAudio")
     .addEventListener(
       "click",
-       () => {
+       async () => {
         overlay.style.display = "none";
         try {
           await audio.play();
@@ -1193,7 +1193,7 @@ function hideAll() {
   });
 }
   
- function playTrial() {
+ async function playTrial() {
   console.log('playTrial called');
   document.getElementById("trialControls").innerHTML = "";
   updateScreen("");
@@ -1516,7 +1516,7 @@ function showParty({ onDone, autoStart = false } = {}) {
   const sprites = [];
   const transientSprites = [];
 
-   function runPartySequence() {
+   async function runPartySequence() {
     if (!startBtn || startBtn.disabled) return;
 
     startBtn.disabled = true;
@@ -1627,6 +1627,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
