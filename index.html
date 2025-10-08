@@ -1329,10 +1329,10 @@ function showResponseOptions() {
     narration.play().catch(() => {});
   }
 
-document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"));
-  document.getElementById("magicalElevator").addEventListener("click", () => handleResponse("magical"));
+  document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
+  document.getElementById("magicalElevator").addEventListener("click", () => handleResponse("magical"), { once: true });
 }
-  
+
 function handleResponse(choice) {
   if (responseSubmitted) return;
   responseSubmitted = true;
@@ -1382,7 +1382,7 @@ const entry = {
       }
     };
 
-if (showAnimal) {
+    if (showAnimal) {
       animalsShownInBlock++;
       showAnimalScreen(proceed);
     } else {
@@ -1392,7 +1392,6 @@ if (showAnimal) {
   .catch(() => {
     alert("Failed to record response.");
     responseSubmitted = false;
-    imgs.forEach(img => img.style.pointerEvents = 'auto');
   });
 }
 
@@ -1628,95 +1627,5 @@ setupVisualElements();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
