@@ -223,12 +223,19 @@
     <video class="media-content" id="gapVideo" src="gapVideo.mp4"playsinline preload="auto" muted></video>
     <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
   </div>
-  <audio id="myAudio" hidden preload="auto"></audio>
+<audio id="myAudio" hidden preload="auto"></audio>
   <audio id="narrationAudio" hidden preload="auto"></audio>
   <audio id="introNarration" src="intro_narration.mp3" hidden preload="auto"></audio>
   <div id="trialControls"></div>
 
-<script>  
+  <script type="application/json" id="tempo-trials-data">
+    [["Twinkle_gap_+15.mp3","17.3","5.5","10.2"],["Mary_gap.mp3","17.1","4.7","7.5"],["Row_gap_-15.mp3","15.5","5.5","3.5"],["Jingle_gap.mp3","13","6.2","6.8"],["Twinkle_gap_-15.mp3","17.8","5.1","13.7"],["Mary_gap_+15.mp3","17","4.8","6.7"],["Row_gap.mp3","15.4","5.8","3.5"],["Jingle_gap_-15.mp3","13","6.4","7.4"],["Twinkle_gap.mp3","17.4","5.2","12"],["Row_gap.mp3","15.4","5.8","3.5"],["Mary_gap_-15.mp3","17","4.8","6.7"],["Twinkle_gap.mp3","17.4","5.2","12"],["Row_gap_+15.mp3","15.5","5.5","2.7"],["Jingle_gap_+15.mp3","13","6.2","5.8"],["Mary_gap.mp3","17.1","4.7","7.5"],["Jingle_gap.mp3","13","6.2","6.8"]]
+  </script>
+  <script type="application/json" id="pitch-trials-data">
+    [["Jingle_gap_-3ST.mp3","13","6.2","6.8"],["Mary_gap.mp3","17.1","4.7","7.5"],["Twinkle_gap_-3ST.mp3","17.9","5.1","13.3"],["Row_gap.mp3","15.4","5.8","3.5"],["Twinkle_gap.mp3","17.4","5.2","12"],["Mary_gap_+3ST.mp3","17","4.8","7.5"],["Row_gap_-3ST.mp3","15.5","5.5","3.3"],["Jingle_gap_+3ST.mp3","13","6.2","6.8"],["Twinkle_gap_+3ST.mp3","17.5","5","12"],["Row_gap.mp3","15.4","5.8","3.5"],["Mary_gap_-3ST.mp3","17","4.8","7.5"],["Twinkle_gap.mp3","17.4","5.2","12"],["Jingle_gap.mp3","13","6.2","6.8"],["Mary_gap.mp3","17.1","4.7","7.5"],["Row_gap_+3ST.mp3","15.5","5.5","3.3"],["Jingle_gap.mp3","13","6.2","6.8"]]
+  </script>
+
+<script>
 const TRIALS_PER_BLOCK= 16;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
@@ -424,6 +431,24 @@ function shuffleArray(array) {
 }
 
 async function loadCSVData(blockType) {
+  const isFileProtocol = window.location.protocol === 'file:';
+
+  if (isFileProtocol) {
+    const embedded = document.getElementById(`${blockType}-trials-data`);
+    if (embedded) {
+      try {
+        const parsed = JSON.parse(embedded.textContent || '[]');
+        blocks[blockType] = shuffleArray(parsed.map(row => row.slice()));
+        return;
+      } catch (err) {
+        console.error(`Failed to parse embedded ${blockType} trials`, err);
+        // Fall through to fetch attempt for parity with HTTP mode
+      }
+    } else {
+      console.warn(`Embedded data for ${blockType} not found; falling back to fetch.`);
+    }
+  }
+
   const response = await fetch(BLOCK_FILES[blockType]);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
@@ -1627,5 +1652,6 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
