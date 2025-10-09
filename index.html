@@ -233,7 +233,7 @@ const TRIALS_PER_BLOCK= 16;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
 const TOTAL_TRIALS = TRIALS_PER_BLOCK * BLOCK_ORDER.length;
-const ANIMALS_PER_BLOCK = 3;
+const ANIMALS_PER_BLOCK = 4;
 const ANIMAL_INTERVAL = Math.ceil(TRIALS_PER_BLOCK / ANIMALS_PER_BLOCK);
 const ANIMALS = [
   {name:"Tiger", image:"tiger.png", sound:"tiger.mp3", action:"Paws up! Roar like a tiger 3 times!"},
@@ -258,7 +258,7 @@ let responseSubmitted=false;
 let trialStartTime=null;
 const visuals=[];
 let completedTrials=0;
-let animalIndex = 0; // add near the top of your script
+let animalIndex = 0; 
 let currentAnimalAudio = null;
 
 function waitForAudioReady(audioEl) {
@@ -1619,6 +1619,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
