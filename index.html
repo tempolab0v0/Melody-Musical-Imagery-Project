@@ -415,14 +415,6 @@ function updateScreen(html, background=null){
   AudioEngine.attachAll(s); // before gesture this queues; after gesture it wires immediately
 }
 
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
-
 async function loadCSVData(blockType) {
   const response = await fetch(BLOCK_FILES[blockType]);
   if (!response.ok) {
@@ -430,10 +422,10 @@ async function loadCSVData(blockType) {
   }
   const text = await response.text();
   const lines = text.trim().split('\n').slice(1);
-  const parsed = shuffleArray(lines.map(line => line.split(',')));
+  const parsed = lines.map(line => line.split(','));
   blocks[blockType] = parsed;
 }
-  
+
 function showIntroScreen() {
   updateScreen(`
     <div style="display:flex;align-items:center;justify-content:center;height:100%;padding:40px;box-sizing:border-box;">
@@ -1122,7 +1114,7 @@ function showRealTrialsIntro() {
   startBtn.addEventListener("click", startRealTrials);
 }
 
- function startRealTrials() {
+async function startRealTrials() {
   const block = BLOCK_ORDER[currentBlockIndex]; // <-- don't override here
 
   try {
@@ -1164,7 +1156,7 @@ function showAutoplayOverlay(audio, callback) {
     .getElementById("resumeAudio")
     .addEventListener(
       "click",
-       async () => {
+      async () => {
         overlay.style.display = "none";
         try {
           await audio.play();
@@ -1193,7 +1185,7 @@ function hideAll() {
   });
 }
   
- async function playTrial() {
+async function playTrial() {
   console.log('playTrial called');
   document.getElementById("trialControls").innerHTML = "";
   updateScreen("");
@@ -1516,7 +1508,7 @@ function showParty({ onDone, autoStart = false } = {}) {
   const sprites = [];
   const transientSprites = [];
 
-   async function runPartySequence() {
+  async function runPartySequence() {
     if (!startBtn || startBtn.disabled) return;
 
     startBtn.disabled = true;
@@ -1627,6 +1619,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
