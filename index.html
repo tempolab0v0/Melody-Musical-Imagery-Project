@@ -261,6 +261,8 @@ const visuals=[];
 let completedTrials=0;
 let animalIndex = 0; // add near the top of your script
 let currentAnimalAudio = null;
+let trialsInCurrentBlock = 0;
+let animalsShownInBlock = 0;
 
 function waitForAudioReady(audioEl) {
   return new Promise((resolve, reject) => {
@@ -1224,14 +1226,6 @@ await Promise.all([
   new Promise(res => { if (v2.readyState >= 1) res(); else v2.onloadedmetadata = res; })
 ]);
 
-// Optional lightweight “prime”; keep muted and ignore failures
-[v1, vGap, v2].forEach(v => v.muted = true);
-await Promise.all([
-  v1.play().then(() => v1.pause()).catch(() => {}),
-  vGap.play().then(() => vGap.pause()).catch(() => {}),
-  v2.play().then(() => v2.pause()).catch(() => {})
-]);
-
   const video1Sec = v1.duration;
   const gapVideoSec = vGap.duration;
   const video2Sec = v2.duration;
@@ -1635,6 +1629,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
