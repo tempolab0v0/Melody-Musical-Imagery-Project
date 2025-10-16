@@ -731,27 +731,40 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
         trial_phase: "practice"
       };
 
-      saveResponse(entry)
-        .then(() => {
-            if (userChoice === correctAnswer) {
-            feedbackEl.style.color = successColor;
-            feedbackEl.innerText = "Correct!";
-            correctSound.play().catch(() => {});
-            setTimeout(callback, 1500);
-          } else {
-            feedbackEl.style.color = errorColor;
-            feedbackEl.innerText = "Oops! Let's try that one again.";
-            wrongSound.play().catch(() => {});
-            setTimeout(() => {
-              playTempoPracticeVideo(
-                videoFile,
-                correctAnswer,
-                callback,
-                trialNumber
-              );
-            }, 4000);
-          }
-        })
+       saveResponse(entry)
+.then(() => {
+  let feedbackText = "";
+  let feedbackAudioSrc = "";
+  if (userChoice === correctAnswer) {
+    if (correctAnswer === "same") {
+      feedbackText = "Correct! It was the same! That means Melody must have been in a normal elevator this time and not a magical one.";
+      feedbackAudioSrc = "feedback_normal.mp3";
+    } else {
+      feedbackText = "Correct! That means Melody must have been in a magical elevator!";
+      feedbackAudioSrc = "feedback_magical.mp3";
+    }
+    feedbackEl.style.color = successColor;
+    feedbackEl.innerText = feedbackText;
+    const feedbackAudio = new Audio(feedbackAudioSrc);
+    AudioEngine.attach(feedbackAudio);
+    feedbackAudio.play().catch(() => {});
+    feedbackAudio.onended = () => setTimeout(callback, 1000);
+  } else {
+    feedbackEl.style.color = errorColor;
+    feedbackEl.innerText = "Oops! Let's try that one again.";
+    wrongSound.play().catch(() => {});
+    wrongSound.onended = () => {
+      setTimeout(() => {
+        playTempoPracticeVideo(
+          videoFile,
+          correctAnswer,
+          callback,
+          trialNumber
+        );
+      }, 500);
+    };
+  }
+})
       .catch(() => {
           feedbackEl.style.color = errorColor;
           feedbackEl.innerText = "We couldn't save your answer. Please try again.";
@@ -761,7 +774,7 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
     });
   });
 }
-
+  
 function runPitchDemo() {
   updateScreen(`
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
@@ -983,22 +996,35 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
         trial_phase: "practice"
       };
 
-      saveResponse(entry)
-        .then(() => {
-          if (choice === correctAnswer) {
-            feedbackEl.style.color = successColor;
-            feedbackEl.innerText = "Correct!";
-            correctSound.play().catch(() => {});
-            setTimeout(callback, 1500);
-          } else {
-            feedbackEl.style.color = errorColor;
-            feedbackEl.innerText = "Oops! Let's try that one again.";
-            wrongSound.play().catch(() => {});
-            setTimeout(() => {
-              playPitchPracticeVideo(videoFile, correctAnswer, callback, trialNumber);
-            }, 4000);
-          }
-        })
+ saveResponse(entry)
+.then(() => {
+  let feedbackText = "";
+  let feedbackAudioSrc = "";
+  if (choice === correctAnswer) {
+    if (correctAnswer === "same") {
+      feedbackText = "Correct! It was the same! That means Melody must have been in a normal elevator this time and not a magical one.";
+      feedbackAudioSrc = "feedback_normal.mp3";
+    } else {
+      feedbackText = "Correct! That means Melody must have been in a magical elevator!";
+      feedbackAudioSrc = "feedback_magical.mp3";
+    }
+    feedbackEl.style.color = successColor;
+    feedbackEl.innerText = feedbackText;
+    const feedbackAudio = new Audio(feedbackAudioSrc);
+    AudioEngine.attach(feedbackAudio);
+    feedbackAudio.play().catch(() => {});
+    feedbackAudio.onended = () => setTimeout(callback, 1000);
+  } else {
+    feedbackEl.style.color = errorColor;
+    feedbackEl.innerText = "Oops! Let's try that one again.";
+    wrongSound.play().catch(() => {});
+    wrongSound.onended = () => {
+      setTimeout(() => {
+        playPitchPracticeVideo(videoFile, correctAnswer, callback, trialNumber);
+      }, 500);
+    };
+  }
+})
         .catch(() => {
           feedbackEl.style.color = errorColor;
           feedbackEl.innerText = "We couldn't save your answer. Please try again.";
@@ -1014,13 +1040,14 @@ function showPitchInstructions() {
     updateScreen(`
       <div style="display:flex;justify-content:center;align-items:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
         <p style="font-size:1.5em;line-height:1.8;max-width:800px;text-align:center;">
-          I need your help! This time, when I get in the elevator you will stay outside. When the door closes,  you won’t hear the song anymore even though it will keep playing in the elevator for me. Keep singing the song in your head so that when the elevator gets to the next floor and the doors open up, you can tell me if I was in the normal elevator or the magical one. <br><br>
-If the music stayed the same, that was a normal elevator.<br>
-But if the pitch of the music changed, then I must have ridden the magical elevator! <br>
-So listen carefully, and keep the music playing in your head.<br>
-Then, choose which elevator I rode: the normal one, or the magical one!<br>
- Are you ready?<br>
- Let’s go!
+          I need your help!<br>
+          This time, you’ll stay outside while I ride the elevator.<br>
+          When the doors close, you won’t hear the music, but it keeps playing for me.<br>
+          Keep the song going in your head!<br>
+          When the doors open, listen:<br>
+          If the music stayed the same, I took the normal elevator.<br>
+          If the pitch changed, I took the magical elevator!<br>
+          Are you ready? Let’s go!
         </p>
         <audio id="pitchInstructions" src="PITCH_INSTRUCTIONS.mp3"></audio>
       </div>
@@ -1055,21 +1082,19 @@ function showRealTrialsIntro() {
       <audio id="realInstructionsAudio" src="real_trials_instructions.mp3"></audio>
       <button id="playRealInstructions" class="btn-primary" style="margin-bottom:24px;">Click to Play Instructions</button>
       <p style="max-width:800px; font-size:1.3em; text-align:center; line-height:1.6; margin-bottom:20px;">
-        I need your help! This time, when I get in the elevator you will stay outside. When the door closes,  <br>
-you won’t hear the song anymore even though it will keep playing in the elevator for me. Keep singing the song in your head <br>
-so that when the elevator gets to the next floor and the doors open up, you can tell me if I was in the normal elevator or the magical one. <br>
-If the music stayed the same, that was a normal elevator. <br>
-But if the speed of the music changed, then I must have ridden the magical elevator! <br>
-So listen carefully, and keep the music playing in your head. <br>
-Then, choose which elevator I rode: the normal one, or the magical one! <br><br>
- Are you ready? <br>
- Let’s go!
-<br><br>
+        I need your help!<br>
+        This time, you’ll stay outside while I ride the elevator.<br>
+        When the doors close, you won’t hear the music, but it keeps playing for me.<br>
+        Keep the song going in your head!<br>
+        When the doors open, listen:<br>
+        If the music stayed the same, I took the normal elevator.<br>
+        If the speed changed, I took the magical elevator!<br>
+        Are you ready? Let’s go!
       </p>
       <button id="startRealTrials" class="btn-primary" style="display:none; margin-top:20px;">Start Real Trials</button>
     </div>
   `);
-
+  
   const playBtn = document.getElementById("playRealInstructions");
   const startBtn = document.getElementById("startRealTrials");
   const audio = document.getElementById("realInstructionsAudio");
