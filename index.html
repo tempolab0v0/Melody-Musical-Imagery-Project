@@ -1084,7 +1084,13 @@ function showPitchInstructions() {
 
 /* REAL TRIALS */
 
-function showRealTrialsIntro() {
+
+
+
+
+
+
+  function showRealTrialsIntro() {
   updateScreen(`
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;
       background: white;
@@ -1093,14 +1099,16 @@ function showRealTrialsIntro() {
       <audio id="realInstructionsAudio" src="real_trials_instructions.mp3"></audio>
       <button id="playRealInstructions" class="btn-primary" style="margin-bottom:24px;">Click to Play Instructions</button>
       <p style="max-width:800px; font-size:1.3em; text-align:center; line-height:1.6; margin-bottom:20px;">
-        I need your help!<br>
-        This time, you’ll stay outside while I ride the elevator.<br>
-        When the doors close, you won’t hear the music, but it keeps playing for me.<br>
-        Keep the song going in your head!<br>
-        When the doors open, listen:<br>
-        If the music stayed the same, I took the normal elevator.<br>
-        If the speed changed, I took the magical elevator!<br>
-        Are you ready? Let’s go!
+        I need your help! This time, when I get in the elevator you will stay outside. When the door closes,  <br>
+you won’t hear the song anymore even though it will keep playing in the elevator for me. Keep singing the song in your head <br>
+so that when the elevator gets to the next floor and the doors open up, you can tell me if I was in the normal elevator or the magical one. <br>
+If the music stayed the same, that was a normal elevator. <br>
+But if the speed of the music changed, then I must have ridden the magical elevator! <br>
+So listen carefully, and keep the music playing in your head. <br>
+Then, choose which elevator I rode: the normal one, or the magical one! <br><br>
+ Are you ready? <br>
+ Let’s go!
+<br><br>
       </p>
       <button id="startRealTrials" class="btn-primary" style="display:none; margin-top:20px;">Start Real Trials</button>
     </div>
@@ -1202,9 +1210,6 @@ async function playTrial() {
   updateScreen("");
   hideAll();
 
-  // Make sure the response gate is reset at the start of every real trial.
-  responseSubmitted = false;
-
   const block = BLOCK_ORDER[currentBlockIndex];
   const trial = blocks[block][trialCounter - 1];
   if (!trial) {
@@ -1213,7 +1218,10 @@ async function playTrial() {
     return;
   }
 
-  const { filename, original: originalSec, gap: gapSec, test: testSec } = trial;
+  const [filename, original, gap, test] = trial;
+  const originalSec = parseFloat(original);
+  const gapSec = parseFloat(gap);
+  const testSec = parseFloat(test);
 
    const audio = document.getElementById("myAudio");
   audio.src = filename;
@@ -1317,11 +1325,11 @@ function showResponseOptions() {
       <div style="display:flex;justify-content:center;gap:80px;">
         <div style="text-align:center;">
           <img src="normal.jpg" class="elevator-option" id="normalElevator" alt="Normal Elevator" style="width:300px;">
-          <div style="margin-top:px;font-weight:bold;">Normal Elevator</div>
+          <div style="margin-top:12px;font-weight:bold;">Normal Elevator</div>
         </div>
         <div style="text-align:center;">
           <img src="magical.png" class="elevator-option" id="magicalElevator" alt="Magical Elevator" style="width:300px;">
-          <div style="margin-top:px;font-weight:bold;">Magical Elevator</div>
+          <div style="margin-top:12px;font-weight:bold;">Magical Elevator</div>
         </div>
       </div>
     </div>`);
@@ -1332,8 +1340,8 @@ function showResponseOptions() {
     narration.play().catch(() => {});
   }
 
-  document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"));
-  document.getElementById("magicalElevator").addEventListener("click", () => handleResponse("magical"));
+  document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
+  document.getElementById("magicalElevator").addEventListener("click", () => handleResponse("magical"), { once: true });
 }
 
 function handleResponse(choice) {
@@ -1471,7 +1479,7 @@ function showParty({ onDone, autoStart = false } = {}) {
   @keyframes wobble {0%,100%{transform:rotate(0)}50%{transform:rotate(-6deg)}}
   @keyframes hop {0%,100%{transform:translateY(0)}35%{transform:translateY(-10px)}}
   #party-cta {display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
-  .btn {padding:10px 14px;border:none;border-radius:999px;background:#4b2e83;color:#fff;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.);}
+  .btn {padding:10px 14px;border:none;border-radius:999px;background:#4b2e83;color:#fff;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);}
   .btn:disabled{opacity:.6;cursor:not-allowed}
   #confetti {position:absolute; inset:0; pointer-events:none}
   `;
