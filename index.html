@@ -1202,6 +1202,9 @@ async function playTrial() {
   updateScreen("");
   hideAll();
 
+  // Make sure the response gate is reset at the start of every real trial.
+  responseSubmitted = false;
+
   const block = BLOCK_ORDER[currentBlockIndex];
   const trial = blocks[block][trialCounter - 1];
   if (!trial) {
@@ -1329,8 +1332,8 @@ function showResponseOptions() {
     narration.play().catch(() => {});
   }
 
-  document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"), { once: true });
-  document.getElementById("magicalElevator").addEventListener("click", () => handleResponse("magical"), { once: true });
+  document.getElementById("normalElevator").addEventListener("click", () => handleResponse("normal"));
+  document.getElementById("magicalElevator").addEventListener("click", () => handleResponse("magical"));
 }
 
 function handleResponse(choice) {
@@ -1627,6 +1630,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
