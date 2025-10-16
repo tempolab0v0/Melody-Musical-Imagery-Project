@@ -247,6 +247,96 @@ const ANIMAL_INTERVAL = Math.ceil(TRIALS_PER_BLOCK / ANIMALS_PER_BLOCK);
 
 const BACKENDLESS_URL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
 
+const OFFLINE_QUEUE_KEY = "melody_offline_responses";
+
+function loadOfflineQueue() {
+  if (typeof localStorage === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.warn("Failed to read offline response queue", err);
+    return [];
+  }
+}
+
+function storeOfflineQueue(queue) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+  } catch (err) {
+    console.warn("Failed to persist offline response queue", err);
+  }
+}
+
+function queueOfflineResponse(entry, error) {
+  try {
+    const queue = loadOfflineQueue();
+    queue.push({
+      entry,
+      queuedAt: new Date().toISOString(),
+      error: error ? (error.message || String(error)) : undefined
+    });
+    storeOfflineQueue(queue);
+    return true;
+  } catch (err) {
+    console.error("Failed to queue offline response", err);
+    return false;
+  }
+}
+
+async function flushOfflineQueue() {
+  const queue = loadOfflineQueue();
+  if (!queue.length) return;
+
+  const remaining = [];
+  for (const item of queue) {
+    try {
+      await postResponseToServer(item.entry);
+    } catch (err) {
+      remaining.push(item);
+    }
+  }
+
+  storeOfflineQueue(remaining);
+}
+
+async function postResponseToServer(entry) {
+  const response = await fetch(BACKENDLESS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry)
+  });
+
+  const contentType = response.headers?.get?.("content-type") || "";
+  let payload = null;
+
+  if (contentType.includes("application/json")) {
+    try {
+      payload = await response.json();
+    } catch (err) {
+      console.warn("Failed to parse Backendless JSON response", err);
+    }
+  } else {
+    const text = await response.text().catch(() => "");
+    if (text) payload = { message: text };
+  }
+
+  if (!response.ok) {
+    const message = payload?.message || payload?.error || `HTTP ${response.status}`;
+    throw new Error(message);
+  }
+
+  if (payload && typeof payload === "object" && "statusCode" in payload && "message" in payload) {
+    throw new Error(`${payload.statusCode}: ${payload.message}`);
+  }
+
+  return payload;
+}
+
+  
 let pitchPracticeCompleted = false;
 
 let blocks={tempo:[],pitch:[]};
@@ -371,18 +461,26 @@ const AudioEngine = (() => {
 return { start, attach, attachAll, setGroupGain, groups };
 })();
 
-function saveResponse(entry) {
-  return fetch(BACKENDLESS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entry)
-  }).then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+async function saveResponse(entry, { maxAttempts = 3, retryDelayMs = 500 } = {}) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await postResponseToServer(entry);
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxAttempts) {
+        await new Promise(res => setTimeout(res, retryDelayMs * attempt));
+      }
     }
-    return response;
-  });
+  }
+
+  throw lastError ?? new Error("Failed to save response");
 }
+
+window.addEventListener("online", () => {
+  flushOfflineQueue().catch(err => console.warn("Failed to flush offline queue", err));
+});
 
 window.onload = async () => {
   // Prime WebAudio on first gesture (click/touch/key)
@@ -395,6 +493,9 @@ window.onload = async () => {
     AudioEngine.setGroupGain("narration", 0.8);
     AudioEngine.setGroupGain("sfx", 0.8);
   };
+
+    flushOfflineQueue().catch(err => console.warn("Failed to flush offline queue on load", err));
+
   window.addEventListener("click", prime, { once: true });
   window.addEventListener("touchend", prime, { once: true });
   window.addEventListener("keydown", prime, { once: true });
@@ -773,7 +874,10 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
     };
   }
 })
-      .catch(() => {
+ .catch((err) => {
+          console.error("Failed to record tempo practice response", err);
+          queueOfflineResponse(entry, err);
+          flushOfflineQueue().catch(e => console.warn("Failed to flush offline queue after queuing practice response", e));
           feedbackEl.style.color = errorColor;
           feedbackEl.innerText = "We couldn't save your answer. Please try again.";
           answered = false;
@@ -1338,7 +1442,7 @@ function handleResponse(choice) {
   const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
   const correctAnswer = isNormal ? "normal" : "magical";
 
-const entry = {
+  const entry = {
     participant: participantID,
     session: sessionID,
     block: BLOCK_ORDER[currentBlockIndex],
@@ -1351,8 +1455,7 @@ const entry = {
     trial_phase: "real"
   };
 
-  saveResponse(entry)
-  .then(() => {
+  const advanceToNextTrial = () => {
     trialsInCurrentBlock++;
     trialCounter++;
     if (trialCounter > TRIALS_PER_BLOCK) {
@@ -1382,19 +1485,30 @@ const entry = {
     } else {
       proceed();
     }
-  })
-  .catch((err) => {
-    console.error("Failed to record response", err);
-    alert("Failed to record response. Please try again.");
-    responseSubmitted = false;
-    imgs.forEach(img => img.style.pointerEvents = 'auto');
-    const normal = document.getElementById("normalElevator");
-    const magical = document.getElementById("magicalElevator");
-    if (normal && magical) {
-      normal.addEventListener("click", () => handleResponse("normal"), { once: true });
-      magical.addEventListener("click", () => handleResponse("magical"), { once: true });
-    }
-  });
+  };
+
+  saveResponse(entry)
+    .then(() => {
+      advanceToNextTrial();
+    })
+    .catch((err) => {
+      console.error("Failed to record response", err);
+      if (queueOfflineResponse(entry, err)) {
+        alert("We couldn't reach the server, but your answer was saved locally. You can keep going!");
+        advanceToNextTrial();
+        flushOfflineQueue().catch(e => console.warn("Failed to flush offline queue after queuing response", e));
+        return;
+      }
+      alert("Failed to record response. Please try again.");
+      responseSubmitted = false;
+      imgs.forEach(img => img.style.pointerEvents = 'auto');
+      const normal = document.getElementById("normalElevator");
+      const magical = document.getElementById("magicalElevator");
+      if (normal && magical) {
+        normal.addEventListener("click", () => handleResponse("normal"), { once: true });
+        magical.addEventListener("click", () => handleResponse("magical"), { once: true });
+      }
+    });
 }
 
 function updateProgress() {
@@ -1629,6 +1743,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
