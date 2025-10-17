@@ -525,6 +525,93 @@ window.onload = async () => {
     catch (err) { alert(`Failed to load ${block} trials: ${err.message}`); }
   }
 
+// Shuffle helper (Fisher-Yates). Accepts an RNG function that returns [0,1).
+function shuffleArrayInPlace(arr, rng = Math.random) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
+}
+
+// small seeded RNG (mulberry32) and seed derivation from string
+function mulberry32(seed) {
+  return function() {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hashStringToSeed(str) {
+  // lightweight hash -> 32-bit unsigned
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+// call this after loadCSVData has populated blocks[block]
+function prepareShuffledBlocks({ useSeed = true } = {}) {
+  if (!participantID) {
+    console.warn("prepareShuffledBlocks: participantID missing — not seeding shuffle");
+  }
+  for (const block of BLOCK_ORDER) {
+    const rows = blocks[block];
+    if (!Array.isArray(rows) || rows.length === 0) continue;
+
+    // key used to persist the order for this participant/session
+    const orderKey = `melody_order_${participantID}_${block}`;
+
+    // If there's a saved permutation (sessionStorage), restore it
+    const saved = sessionStorage.getItem(orderKey);
+    if (saved) {
+      try {
+        const indices = JSON.parse(saved);
+        if (Array.isArray(indices) && indices.length === rows.length) {
+          // reorder according to saved indices
+          blocks[block] = indices.map(i => rows[i]);
+          console.log(`Restored saved order for block ${block}`);
+          continue;
+        } else {
+          console.warn("Saved order invalid or length mismatch; will reshuffle");
+        }
+      } catch (e) {
+        console.warn("Failed to parse saved shuffle order:", e);
+      }
+    }
+
+    // No saved order: create a new shuffled permutation and persist the indices
+    const n = rows.length;
+    const indices = Array.from({ length: n }, (_, i) => i);
+
+    // optional reproducible seed (per participant)
+    let rng = Math.random;
+    if (useSeed && participantID) {
+      const seed = hashStringToSeed(`${participantID}_${block}`);
+      rng = mulberry32(seed);
+    }
+
+    shuffleArrayInPlace(indices, rng);
+
+    // permute rows into new order
+    const permuted = indices.map(i => rows[i]);
+    blocks[block] = permuted;
+
+    try {
+      sessionStorage.setItem(orderKey, JSON.stringify(indices));
+    } catch (e) {
+      console.warn("Could not persist shuffle order (sessionStorage):", e);
+    }
+
+    console.log(`Shuffled ${block}: ${n} rows (persisted order key=${orderKey})`);
+  }
+}
+  
   // Preload animal sounds (not in DOM) — safe to queue before gesture
   ANIMALS.forEach(a => { a.audio = new Audio(a.sound); AudioEngine.attach(a.audio); });
 
@@ -1640,8 +1727,18 @@ function handleResponse(choice) {
     completedTrials++;
     updateProgress();
 
-    const animalInterval = animalIntervalFor(currentBlockName);
-    const showAnimal = (trialsInCurrentBlock % animalInterval === 0) && (animalsShownInBlock < ANIMALS_PER_BLOCK);
+      const scheduledAnimalTrials = REAL_BLOCK_ANIMAL_TRIALS[currentBlockName];
+    let showAnimal = false;
+
+    if (Array.isArray(scheduledAnimalTrials) && scheduledAnimalTrials.length) {
+      showAnimal = scheduledAnimalTrials.includes(trialsInCurrentBlock)
+        && animalsShownInBlock < scheduledAnimalTrials.length;
+    } else {
+      const animalInterval = animalIntervalFor(currentBlockName);
+      showAnimal = (animalInterval > 0)
+        && (trialsInCurrentBlock % animalInterval === 0)
+        && (animalsShownInBlock < ANIMALS_PER_BLOCK);
+    }
 
     const proceed = () => {
       if (currentBlockIndex >= BLOCK_ORDER.length) {
@@ -1933,6 +2030,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
