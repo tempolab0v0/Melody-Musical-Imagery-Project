@@ -220,7 +220,7 @@
     <img class="media-content" id="gapStillframe" src="gapStillframe.png"/>
     <img class="media-content" id="stillframe2" src="stillframe2.png"/>
     <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
-    <video class="media-content" id="gapVideo" src="gapVideo.mp4"playsinline preload="auto" muted></video>
+    <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
     <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
   </div>
   <audio id="myAudio" hidden preload="auto"></audio>
@@ -249,6 +249,25 @@ const BACKENDLESS_URL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E6
 
 const OFFLINE_QUEUE_KEY = "melody_offline_responses";
 
+const screenCleanupTasks = [];
+
+function addScreenCleanup(task) {
+  if (typeof task === "function") {
+    screenCleanupTasks.push(task);
+  }
+}
+
+function runScreenCleanup() {
+  while (screenCleanupTasks.length) {
+    const task = screenCleanupTasks.pop();
+    try {
+      task();
+    } catch (err) {
+      console.warn("Screen cleanup task failed", err);
+    }
+  }
+}
+  
 function loadOfflineQueue() {
   if (typeof localStorage === "undefined") return [];
   try {
@@ -518,6 +537,7 @@ window.onload = async () => {
 };
 
 function updateScreen(html, background=null){
+  runScreenCleanup();
   const s = document.getElementById("screen");
   s.innerHTML = html;
   s.style.background = background !== null ? background : "transparent";
@@ -1791,6 +1811,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
