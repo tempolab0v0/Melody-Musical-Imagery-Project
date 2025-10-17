@@ -1345,8 +1345,13 @@ function hideAll() {
  * - guards against missing video elements/durations
  * - improved filename 'gap' detection using includes('_gap')
  */
+// Replace the existing playTrial() in your script with this function.
+// It includes robust timeline handling, audio-ended guard, fallback timer,
+// defensive CSV/trial checks, and logs useful diagnostics.
 async function playTrial() {
   console.log('playTrial called; blockIndex=', currentBlockIndex, 'trialCounter=', trialCounter);
+
+  // Clear UI and stop any leftover media
   document.getElementById("trialControls").innerHTML = "";
   updateScreen("");
   hideAll();
@@ -1383,13 +1388,17 @@ async function playTrial() {
     return;
   }
 
+  // Prepare audio
   const audio = document.getElementById("myAudio");
   audio.src = filename;
   audio.load();
   currentAudioFile = filename;
 
-  // get video elements safely
-  const videoEls = visuals.filter(v => v.el && v.el.tagName && v.el.tagName.toUpperCase() === "VIDEO").map(v => v.el);
+  // collect video elements from visuals array (defensive)
+  const videoEls = visuals
+    .filter(v => v.el && v.el.tagName && v.el.tagName.toUpperCase() === "VIDEO")
+    .map(v => v.el);
+
   if (videoEls.length < 3) {
     console.error('Expected 3 video elements but found', videoEls.length, videoEls);
     updateScreen('<h2>Error: Missing required video elements (video1, gapVideo, video2). Please check your HTML.</h2>');
@@ -1397,7 +1406,7 @@ async function playTrial() {
   }
   const [v1, vGap, v2] = videoEls;
 
-  // Wait for metadata so .duration is valid (guard each video)
+  // Wait for video metadata (durations)
   try {
     await Promise.all([
       new Promise(res => { if (v1.readyState >= 1) res(); else v1.onloadedmetadata = res; }),
@@ -1418,6 +1427,7 @@ async function playTrial() {
     return;
   }
 
+  // Compute timeline pieces
   const preStillSec = Math.max(0, originalSec - video1Sec);
   const gapStillSec = Math.max(0, gapSec - gapVideoSec);
   const postStillSec = Math.max(0, testSec - video2Sec);
@@ -1430,6 +1440,15 @@ async function playTrial() {
   visuals[4].start = t; visuals[4].end = t += video2Sec;
   visuals[5].start = t; visuals[5].end = t += postStillSec;
 
+  console.log('Timeline for trial:', {
+    filename,
+    originalSec, gapSec, testSec,
+    video1Sec, gapVideoSec, video2Sec,
+    preStillSec, gapStillSec, postStillSec,
+    visualsEnds: visuals.map(v => v.end)
+  });
+
+  // Wait for audio ready so waitForAudioReady can catch loading errors
   try {
     await waitForAudioReady(audio);
   } catch (err) {
@@ -1439,35 +1458,60 @@ async function playTrial() {
     return;
   }
 
+  // Start clock and visuals loop with robust finish conditions
   trialStartTime = performance.now();
-  // start visuals playback & robust finish logic
+
   let currentVisual = null;
   let visualsDone = false;
   let fallbackTimer = null;
 
+  function stopAllMedia() {
+    // pause audio
+    try { audio.pause(); } catch (_) {}
+    // pause/rewind videos
+    visuals.forEach(v => {
+      if (v && v.el && v.el.tagName === "VIDEO") {
+        try { v.el.pause(); v.el.currentTime = 0; } catch(_) {}
+      }
+    });
+  }
+
   function finishVisuals() {
     if (visualsDone) return;
     visualsDone = true;
-    try { clearTimeout(fallbackTimer); } catch (_) {}
-    try { hideAll(); } catch (_) {}
-    try { showResponseOptions(); } catch (e) { console.error("showResponseOptions failed", e); }
+    try { clearTimeout(fallbackTimer); } catch(_) {}
+    try { stopAllMedia(); } catch(_) {}
+    try { hideAll(); } catch(_) {}
+    // Ensure showResponseOptions errors are caught
+    try {
+      showResponseOptions();
+    } catch (e) {
+      console.error("showResponseOptions failed", e);
+    }
   }
 
   function updateVisuals() {
-    if (audio.ended) { finishVisuals(); return; }
+    // If audio ended, finish immediately
+    if (audio.ended) {
+      finishVisuals();
+      return;
+    }
 
+    // master clock: audio.currentTime if available, otherwise wall-clock elapsed
     const time = (typeof audio.currentTime === "number" && !Number.isNaN(audio.currentTime))
       ? audio.currentTime
       : ((performance.now() - trialStartTime) / 1000);
 
+    // Update which visual should be visible
     for (const v of visuals) {
       if (time >= v.start && time < v.end) {
         if (currentVisual !== v.el) {
+          // show this visual
           hideAll();
           if (v.el) {
             v.el.style.display = "block";
             if (v.el.tagName === "VIDEO") {
-              try { v.el.currentTime = 0; v.el.play().catch(()=>{}); } catch (_) {}
+              try { v.el.currentTime = 0; v.el.play().catch(()=>{}); } catch(_) {}
             }
           }
           currentVisual = v.el;
@@ -1484,10 +1528,11 @@ async function playTrial() {
     }
   }
 
-  // finish when audio naturally ends
-  audio.addEventListener('ended', finishVisuals, { once: true });
+  // Ensure visuals finish when audio ends
+  const onAudioEnded = () => finishVisuals();
+  audio.addEventListener('ended', onAudioEnded, { once: true });
 
-  // fallback safety
+  // Safety fallback: lastEnd + margin or at least 30s
   const lastEndSec = visuals[visuals.length - 1]?.end || 30;
   const fallbackMs = Math.max(30000, (lastEndSec + 3) * 1000);
   fallbackTimer = setTimeout(() => {
@@ -1495,20 +1540,29 @@ async function playTrial() {
     finishVisuals();
   }, fallbackMs);
 
-  // start audio + visuals loop
+  // Try to play audio; start visuals loop regardless (visuals uses wall-time fallback)
   try {
-    const p = audio.play();
-    if (p && typeof p.then === 'function') {
-      p.then(() => requestAnimationFrame(updateVisuals)).catch(() => requestAnimationFrame(updateVisuals));
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.then === 'function') {
+      playPromise
+        .then(() => {
+          // started successfully; visuals will follow audio.currentTime
+          requestAnimationFrame(updateVisuals);
+        })
+        .catch(err => {
+          // playback blocked — still start visuals using wall-clock elapsed
+          console.warn("audio.play() rejected:", err);
+          requestAnimationFrame(updateVisuals);
+        });
     } else {
+      // older browsers: start visuals loop
       requestAnimationFrame(updateVisuals);
     }
   } catch (err) {
     console.warn("audio.play() threw:", err);
     requestAnimationFrame(updateVisuals);
   }
-
-} // <-- CLOSE playTrial
+}
   
 function showResponseOptions() {
   updateScreen(`
@@ -1875,6 +1929,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
