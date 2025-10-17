@@ -233,7 +233,11 @@
 const FALLBACK_TRIALS_PER_BLOCK = 16;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
-const ANIMALS_PER_BLOCK = 2;
+const ANIMALS_PER_BLOCK = 3;
+const REAL_BLOCK_ANIMAL_TRIALS = {
+  tempo: [4, 8, 12],
+  pitch: [4, 8, 12],
+};
 const ANIMALS = [
   {name:"Tiger", image:"tiger.png", sound:"tiger.mp3", action:"Paws up! Roar like a tiger 3 times!"},
   {name:"Lion", image:"lion.png", sound:"lion.mp3", action:"Stand tall like a lion. Reach up high and hold a big stretch for 5 seconds."},
@@ -1929,6 +1933,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
