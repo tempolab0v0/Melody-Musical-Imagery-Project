@@ -1321,14 +1321,62 @@ async function playTrial() {
   audio.load();
   currentAudioFile = filename;
   
-  const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
+const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
 
-// Wait for metadata so .duration is valid
-await Promise.all([
-  new Promise(res => { if (v1.readyState >= 1) res(); else v1.onloadedmetadata = res; }),
-  new Promise(res => { if (vGap.readyState >= 1) res(); else vGap.onloadedmetadata = res; }),
-  new Promise(res => { if (v2.readyState >= 1) res(); else v2.onloadedmetadata = res; })
-]);
+  const waitForMetadata = (video) => new Promise((resolve, reject) => {
+    if (video.readyState >= 1) {
+      resolve();
+      return;
+    }
+    const onLoaded = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = (event) => {
+      cleanup();
+      reject(event?.error || new Error("Video failed to load metadata"));
+    };
+    const cleanup = () => {
+      video.removeEventListener("loadedmetadata", onLoaded);
+      video.removeEventListener("error", onError);
+    };
+    video.addEventListener("loadedmetadata", onLoaded, { once: true });
+    video.addEventListener("error", onError, { once: true });
+  });
+
+  try {
+    await Promise.all([
+      waitForMetadata(v1),
+      waitForMetadata(vGap),
+      waitForMetadata(v2)
+    ]);
+  } catch (err) {
+    console.error("Unable to load video metadata", err);
+    updateScreen('<h2>Error: Video files not loaded properly. Please check your video files and try again.</h2>');
+    updatePlayButton();
+    return;
+  }
+
+  const primeVideo = async (video) => {
+    try {
+      video.muted = true;
+      video.currentTime = 0;
+      await video.play();
+    } catch (err) {
+      console.warn("Video prime failed", err);
+    } finally {
+      try {
+        video.pause();
+        video.currentTime = 0;
+      } catch (_) {}
+    }
+  };
+
+  await Promise.all([
+    primeVideo(v1),
+    primeVideo(vGap),
+    primeVideo(v2)
+  ]);
 
   const video1Sec = v1.duration;
   const gapVideoSec = vGap.duration;
@@ -1525,8 +1573,8 @@ function showAnimalScreen(callback) {
       <img src="${animal.image}" alt="${animal.name}" style="max-width:40%;height:auto;margin-bottom:20px;"/>
       <h2>Ding! We stopped at the ${animal.name}'s floor!</h2>
       <p style="margin-top:10px;font-size:1.2em;">${animal.action} Then click Continue to ride again.</p>
-      <button id="continueAnimal" class="btn-primary" style="margin-top:20px;" type="button" disabled>Continue (<span id="animalCountdown">45</span>s)</button>
-    </div>
+ <button id="continueAnimal" class="btn-primary" style="margin-top:20px;" type="button" disabled>Continue (<span id="animalCountdown">20</span>s)</button>
+ </div>
   `);
 
   // Play the animal sound (don’t await)
@@ -1743,6 +1791,7 @@ setupVisualElements();
 </script>
 </body>
 </html>
+
 
 
 
