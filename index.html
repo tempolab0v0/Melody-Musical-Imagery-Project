@@ -220,7 +220,7 @@
     <img class="media-content" id="gapStillframe" src="gapStillframe.png"/>
     <img class="media-content" id="stillframe2" src="stillframe2.png"/>
     <video class="media-content" id="video1" src="video1.mp4" playsinline preload="auto" muted></video>
-    <video class="media-content" id="gapVideo" src="gapVideo.mp4" playsinline preload="auto" muted></video>
+    <video class="media-content" id="gapVideo" src="gapVideo.mp4"playsinline preload="auto" muted></video>
     <video class="media-content" id="video2" src="video2.mp4" playsinline preload="auto" muted></video>
   </div>
   <audio id="myAudio" hidden preload="auto"></audio>
@@ -229,10 +229,10 @@
   <div id="trialControls"></div>
 
 <script>  
-const TRIALS_PER_BLOCK= 16;
+// Fallback and dynamic trial handling
+const FALLBACK_TRIALS_PER_BLOCK = 16;
 const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
-const TOTAL_TRIALS = TRIALS_PER_BLOCK * BLOCK_ORDER.length;
 const ANIMALS_PER_BLOCK = 2;
 const ANIMALS = [
   {name:"Tiger", image:"tiger.png", sound:"tiger.mp3", action:"Paws up! Roar like a tiger 3 times!"},
@@ -243,31 +243,9 @@ const ANIMALS = [
   {name:"Parrot", image:"parrot.png", sound:"parrot.mp3", action:"Stand tall, flap 8 times, then give one big squawk — ‘SQUAWK!’"}
 ];
 
-const ANIMAL_INTERVAL = Math.ceil(TRIALS_PER_BLOCK / ANIMALS_PER_BLOCK);
-
 const BACKENDLESS_URL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
-
 const OFFLINE_QUEUE_KEY = "melody_offline_responses";
 
-const screenCleanupTasks = [];
-
-function addScreenCleanup(task) {
-  if (typeof task === "function") {
-    screenCleanupTasks.push(task);
-  }
-}
-
-function runScreenCleanup() {
-  while (screenCleanupTasks.length) {
-    const task = screenCleanupTasks.pop();
-    try {
-      task();
-    } catch (err) {
-      console.warn("Screen cleanup task failed", err);
-    }
-  }
-}
-  
 function loadOfflineQueue() {
   if (typeof localStorage === "undefined") return [];
   try {
@@ -355,7 +333,6 @@ async function postResponseToServer(entry) {
   return payload;
 }
 
-  
 let pitchPracticeCompleted = false;
 
 let blocks={tempo:[],pitch:[]};
@@ -368,10 +345,24 @@ let responseSubmitted=false;
 let trialStartTime=null;
 const visuals=[];
 let completedTrials=0;
-let animalIndex = 0; // add near the top of your script
+let animalIndex = 0;
 let currentAnimalAudio = null;
 let trialsInCurrentBlock = 0;
 let animalsShownInBlock = 0;
+
+function trialsFor(block) {
+  const len = blocks[block] && Array.isArray(blocks[block]) ? blocks[block].length : 0;
+  return len > 0 ? len : FALLBACK_TRIALS_PER_BLOCK;
+}
+
+function animalIntervalFor(block) {
+  const t = trialsFor(block) || 1;
+  return Math.max(1, Math.ceil(t / ANIMALS_PER_BLOCK));
+}
+
+function totalTrialsCount() {
+  return BLOCK_ORDER.reduce((sum, b) => sum + (blocks[b] && Array.isArray(blocks[b]) && blocks[b].length ? blocks[b].length : FALLBACK_TRIALS_PER_BLOCK), 0);
+}
 
 function waitForAudioReady(audioEl) {
   return new Promise((resolve, reject) => {
@@ -537,22 +528,52 @@ window.onload = async () => {
 };
 
 function updateScreen(html, background=null){
-  runScreenCleanup();
   const s = document.getElementById("screen");
   s.innerHTML = html;
   s.style.background = background !== null ? background : "transparent";
   AudioEngine.attachAll(s); // before gesture this queues; after gesture it wires immediately
 }
 
+/**
+ * Robust CSV loader:
+ * - supports comma or tab separated values
+ * - trims fields
+ * - skips blank lines
+ * - logs helpful diagnostics
+ */
 async function loadCSVData(blockType) {
   const response = await fetch(BLOCK_FILES[blockType]);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
   }
   const text = await response.text();
-  const lines = text.trim().split('\n').slice(1);
-  const parsed = lines.map(line => line.split(','));
+
+  // split into lines safely, drop blank lines, remove header
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length <= 1) {
+    blocks[blockType] = [];
+    console.warn(`No data rows found for block ${blockType}`);
+    return;
+  }
+  const dataLines = lines.slice(1);
+
+  // Support both comma-separated and tab-separated rows.
+  // Also trim fields and remove surrounding quotes if present.
+  const parsed = dataLines.map(line => {
+    // split on comma or tab; if quotes are used with commas inside this is a lightweight approach:
+    // first try splitting on tab (common), then fallback to comma if no tabs found.
+    const sep = line.includes('\t') ? '\t' : ',';
+    const cells = line.split(sep).map(s => s.trim().replace(/^"(.*)"$/, '$1'));
+    return cells;
+  });
+
+  // Validate shape and log if there are malformed rows
+  const bad = parsed.filter(row => row.length < 4);
+  if (bad.length) {
+    console.warn(`Warning: ${bad.length} rows for ${blockType} have < 4 columns. First bad row:`, bad[0]);
+  }
   blocks[blockType] = parsed;
+  console.log(`Loaded ${parsed.length} trials for ${blockType}`);
 }
 
 function showIntroScreen() {
@@ -754,7 +775,7 @@ function runTempoPractice() {
   function nextPractice() {
     responseSubmitted = false; // Reset for each practice trial
     if (i >= practiceTrials.length) {
-      currentBlockIndex = 0; // ✅ SET tempo block here
+      currentBlockIndex = 0; // set tempo block
       trialCounter = 1;
       showRealTrialsIntro();
       return;
@@ -782,7 +803,7 @@ function playTempoPracticeVideo(videoFile, correctAnswer, callback, trialNumber)
 
   const video = document.getElementById("practiceVideo");
   video.muted = false;
-    video.volume = 1.0;
+  video.volume = 1.0;
   video.onended = () => {
     showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber);
   };
@@ -1247,7 +1268,7 @@ function showRealTrialsIntro() {
 }
 
 async function startRealTrials() {
-  const block = BLOCK_ORDER[currentBlockIndex]; // <-- don't override here
+  const block = BLOCK_ORDER[currentBlockIndex];
 
   try {
     if (!blocks[block] || blocks[block].length === 0) {
@@ -1266,7 +1287,6 @@ async function startRealTrials() {
   updatePlayButton();
 }
 
-  
 function setupVisualElements() {
   visuals.length=0;
   visuals.push(
@@ -1304,106 +1324,96 @@ function showAutoplayOverlay(audio, callback) {
 function updatePlayButton() {
   const block = BLOCK_ORDER[currentBlockIndex];
   const trialControls = document.getElementById("trialControls");
-  trialControls.innerHTML = `<button id="playButton" class="btn-primary">Start ${block.toUpperCase()} Trial ${trialCounter} of ${TRIALS_PER_BLOCK}</button>`;
+  const total = trialsFor(block);
+  trialControls.innerHTML = `<button id="playButton" class="btn-primary">Start ${block.toUpperCase()} Trial ${trialCounter} of ${total}</button>`;
   document.getElementById("playButton").addEventListener("click", playTrial);
 }
 function hideAll() {
   visuals.forEach(v => {
+    if (!v.el) return;
     v.el.style.display = "none";
     if (v.el.tagName === "VIDEO") {
-      v.el.pause();
-      v.el.currentTime = 0;
+      try { v.el.pause(); v.el.currentTime = 0; } catch (_) {}
     }
   });
 }
   
+/**
+ * Robust playTrial:
+ * - validates trial row shape
+ * - parses numeric durations safely
+ * - guards against missing video elements/durations
+ * - improved filename 'gap' detection using includes('_gap')
+ */
 async function playTrial() {
-  console.log('playTrial called');
+  console.log('playTrial called; blockIndex=', currentBlockIndex, 'trialCounter=', trialCounter);
   document.getElementById("trialControls").innerHTML = "";
   updateScreen("");
   hideAll();
 
   const block = BLOCK_ORDER[currentBlockIndex];
-  const trial = blocks[block][trialCounter - 1];
+  const blockArray = blocks[block] || [];
+  console.log(`Block "${block}" has ${blockArray.length} rows`);
+
+  const trial = blockArray[trialCounter - 1];
   if (!trial) {
-    updateScreen(`<h2>Error: No trial data found. Please check your CSV and block setup.</h2>`);
-    console.error('No trial data found for block', block, 'trialCounter', trialCounter);
-    return;
-  }
-
-  const [filename, original, gap, test] = trial;
-  const originalSec = parseFloat(original);
-  const gapSec = parseFloat(gap);
-  const testSec = parseFloat(test);
-
-   const audio = document.getElementById("myAudio");
-  audio.src = filename;
-  audio.load();
-  currentAudioFile = filename;
-  
-const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.el);
-
-  const waitForMetadata = (video) => new Promise((resolve, reject) => {
-    if (video.readyState >= 1) {
-      resolve();
-      return;
-    }
-    const onLoaded = () => {
-      cleanup();
-      resolve();
-    };
-    const onError = (event) => {
-      cleanup();
-      reject(event?.error || new Error("Video failed to load metadata"));
-    };
-    const cleanup = () => {
-      video.removeEventListener("loadedmetadata", onLoaded);
-      video.removeEventListener("error", onError);
-    };
-    video.addEventListener("loadedmetadata", onLoaded, { once: true });
-    video.addEventListener("error", onError, { once: true });
-  });
-
-  try {
-    await Promise.all([
-      waitForMetadata(v1),
-      waitForMetadata(vGap),
-      waitForMetadata(v2)
-    ]);
-  } catch (err) {
-    console.error("Unable to load video metadata", err);
-    updateScreen('<h2>Error: Video files not loaded properly. Please check your video files and try again.</h2>');
+    console.error('No trial data found for', { block, trialCounter, blockLength: blockArray.length, trialRow: trial });
+    updateScreen(`<h2>Error: No trial data found for block ${block} trial ${trialCounter}. Please check your CSV and block setup.</h2>`);
+    // allow operator to recover
+    rebuildBaseHTML();
     updatePlayButton();
     return;
   }
 
-  const primeVideo = async (video) => {
-    try {
-      video.muted = true;
-      video.currentTime = 0;
-      await video.play();
-    } catch (err) {
-      console.warn("Video prime failed", err);
-    } finally {
-      try {
-        video.pause();
-        video.currentTime = 0;
-      } catch (_) {}
-    }
-  };
+  if (!Array.isArray(trial) || trial.length < 4) {
+    console.error('Malformed trial row (expected >=4 columns)', { block, trialCounter, trial });
+    updateScreen(`<h2>Error: Malformed trial data for ${block} trial ${trialCounter}. Please check CSV format (comma or tab separated).</h2>`);
+    return;
+  }
 
-  await Promise.all([
-    primeVideo(v1),
-    primeVideo(vGap),
-    primeVideo(v2)
-  ]);
+  const [filenameRaw, originalRaw, gapRaw, testRaw] = trial;
+  const filename = String(filenameRaw).trim();
+  const originalSec = parseFloat(String(originalRaw).trim());
+  const gapSec = parseFloat(String(gapRaw).trim());
+  const testSec = parseFloat(String(testRaw).trim());
 
-  const video1Sec = v1.duration;
-  const gapVideoSec = vGap.duration;
-  const video2Sec = v2.duration;
+  if (Number.isNaN(originalSec) || Number.isNaN(gapSec) || Number.isNaN(testSec)) {
+    console.error('Numeric fields could not be parsed for trial', { filename, originalRaw, gapRaw, testRaw });
+    updateScreen(`<h2>Error: Could not parse numeric durations for ${filename}. Check CSV numeric columns.</h2>`);
+    return;
+  }
+
+  const audio = document.getElementById("myAudio");
+  audio.src = filename;
+  audio.load();
+  currentAudioFile = filename;
+
+  // get video elements safely
+  const videoEls = visuals.filter(v => v.el && v.el.tagName && v.el.tagName.toUpperCase() === "VIDEO").map(v => v.el);
+  if (videoEls.length < 3) {
+    console.error('Expected 3 video elements but found', videoEls.length, videoEls);
+    updateScreen('<h2>Error: Missing required video elements (video1, gapVideo, video2). Please check your HTML.</h2>');
+    return;
+  }
+  const [v1, vGap, v2] = videoEls;
+
+  // Wait for metadata so .duration is valid (guard each video)
+  try {
+    await Promise.all([
+      new Promise(res => { if (v1.readyState >= 1) res(); else v1.onloadedmetadata = res; }),
+      new Promise(res => { if (vGap.readyState >= 1) res(); else vGap.onloadedmetadata = res; }),
+      new Promise(res => { if (v2.readyState >= 1) res(); else v2.onloadedmetadata = res; })
+    ]);
+  } catch (err) {
+    console.warn('Failed waiting for video metadata', err);
+  }
+
+  const video1Sec = Number(v1.duration);
+  const gapVideoSec = Number(vGap.duration);
+  const video2Sec = Number(v2.duration);
 
   if (isNaN(video1Sec) || isNaN(gapVideoSec) || isNaN(video2Sec)) {
-    console.warn('One or more video durations are NaN:', {video1Sec, gapVideoSec, video2Sec});
+    console.warn('One or more video durations are NaN:', { video1Sec, gapVideoSec, video2Sec });
     updateScreen('<h2>Error: Video files not loaded properly. Please check your video files and try again.</h2>');
     return;
   }
@@ -1420,14 +1430,16 @@ const [v1, vGap, v2] = visuals.filter(v => v.el.tagName === "VIDEO").map(v => v.
   visuals[4].start = t; visuals[4].end = t += video2Sec;
   visuals[5].start = t; visuals[5].end = t += postStillSec;
 
-try {
+  try {
     await waitForAudioReady(audio);
   } catch (err) {
     console.error("Unable to start trial — audio failed to load.", err);
     updateScreen('<h2>Error: the audio file could not be loaded. Please try again.</h2>');
     updatePlayButton();
     return;
-  }  trialStartTime = performance.now();
+  }
+
+  trialStartTime = performance.now();
 
   let currentVisual = null;
 
@@ -1437,8 +1449,12 @@ try {
       if (time >= v.start && time < v.end) {
         if (currentVisual !== v.el) {
           hideAll();
-          v.el.style.display = "block";
-          if (v.el.tagName === "VIDEO") v.el.play();
+          if (v.el) {
+            v.el.style.display = "block";
+            if (v.el.tagName === "VIDEO") {
+              try { v.el.currentTime = 0; v.el.play(); } catch (_) {}
+            }
+          }
           currentVisual = v.el;
         }
         break;
@@ -1460,7 +1476,6 @@ try {
   } catch (err) {
     console.warn("Audio autoplay blocked or failed:", err);
     showAutoplayOverlay(audio, updateVisuals);
-    // Make overlay more obvious
     const overlay = document.getElementById("overlay");
     overlay.innerHTML += '<div style="color:red;font-size:1.5em;margin-top:20px;">Audio playback was blocked. Please click the button above to start the trial.</div>';
   }
@@ -1498,7 +1513,6 @@ function showResponseOptions() {
   document.getElementById("magicalElevator").addEventListener("click", () => handleResponse("magical"), { once: true });
 }
 
-  
 function handleResponse(choice) {
   if (responseSubmitted) return;
   responseSubmitted = true;
@@ -1507,7 +1521,8 @@ function handleResponse(choice) {
   imgs.forEach(img => img.style.pointerEvents = 'none');
 
   const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
-  const isNormal = /_gap(\.mp3)?$/.test(currentAudioFile);
+  // Robust gap detection: if filename includes '_gap' treat as normal
+  const isNormal = typeof currentAudioFile === 'string' && currentAudioFile.includes('_gap');
   const correctAnswer = isNormal ? "normal" : "magical";
 
   const entry = {
@@ -1526,7 +1541,11 @@ function handleResponse(choice) {
   const advanceToNextTrial = () => {
     trialsInCurrentBlock++;
     trialCounter++;
-    if (trialCounter > TRIALS_PER_BLOCK) {
+
+    const currentBlockName = BLOCK_ORDER[currentBlockIndex];
+    const currentBlockTotal = trialsFor(currentBlockName);
+
+    if (trialCounter > currentBlockTotal) {
       trialCounter = 1;
       currentBlockIndex++;
     }
@@ -1534,7 +1553,8 @@ function handleResponse(choice) {
     completedTrials++;
     updateProgress();
 
-    const showAnimal = (trialsInCurrentBlock % ANIMAL_INTERVAL === 0) && (animalsShownInBlock < ANIMALS_PER_BLOCK);
+    const animalInterval = animalIntervalFor(currentBlockName);
+    const showAnimal = (trialsInCurrentBlock % animalInterval === 0) && (animalsShownInBlock < ANIMALS_PER_BLOCK);
 
     const proceed = () => {
       if (currentBlockIndex >= BLOCK_ORDER.length) {
@@ -1580,7 +1600,9 @@ function handleResponse(choice) {
 }
 
 function updateProgress() {
-  const percent = (completedTrials / TOTAL_TRIALS) * 100;
+  const total = totalTrialsCount();
+  if (total <= 0) return;
+  const percent = (completedTrials / total) * 100;
   document.getElementById("progressBar").style.width = percent + "%";
 }
 
@@ -1593,8 +1615,8 @@ function showAnimalScreen(callback) {
       <img src="${animal.image}" alt="${animal.name}" style="max-width:40%;height:auto;margin-bottom:20px;"/>
       <h2>Ding! We stopped at the ${animal.name}'s floor!</h2>
       <p style="margin-top:10px;font-size:1.2em;">${animal.action} Then click Continue to ride again.</p>
- <button id="continueAnimal" class="btn-primary" style="margin-top:20px;" type="button" disabled>Continue (<span id="animalCountdown">20</span>s)</button>
- </div>
+      <button id="continueAnimal" class="btn-primary" style="margin-top:20px;" type="button" disabled>Continue (<span id="animalCountdown">45</span>s)</button>
+    </div>
   `);
 
   // Play the animal sound (don’t await)
@@ -1638,7 +1660,7 @@ function showAnimalScreen(callback) {
 }
   
 function showParty({ onDone, autoStart = false } = {}) {
-  // ---- quick CSS (animations + grid) ----␊
+  // ---- quick CSS (animations + grid) ----
   const css = `
   #party-wrap {height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;gap:18px;padding:20px; position:relative; overflow:hidden;}
   #animal-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:16px;max-width:900px;width:100%;}
@@ -1808,9 +1830,23 @@ function rebuildBaseHTML() {
 }
 setupVisualElements();
 
+/* Utility to allow party audio cleanup hook (keeps parity with earlier code which referenced it) */
+const _screenCleanupFns = [];
+function addScreenCleanup(fn) {
+  if (typeof fn === 'function') _screenCleanupFns.push(fn);
+}
+function runScreenCleanup() {
+  while (_screenCleanupFns.length) {
+    const fn = _screenCleanupFns.shift();
+    try { fn(); } catch (_) {}
+  }
+}
+
+/* End of script */
 </script>
 </body>
 </html>
+
 
 
 
