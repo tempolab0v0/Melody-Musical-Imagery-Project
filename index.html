@@ -1440,7 +1440,75 @@ async function playTrial() {
   }
 
   trialStartTime = performance.now();
+  // start visuals playback & robust finish logic
+  let currentVisual = null;
+  let visualsDone = false;
+  let fallbackTimer = null;
 
+  function finishVisuals() {
+    if (visualsDone) return;
+    visualsDone = true;
+    try { clearTimeout(fallbackTimer); } catch (_) {}
+    try { hideAll(); } catch (_) {}
+    try { showResponseOptions(); } catch (e) { console.error("showResponseOptions failed", e); }
+  }
+
+  function updateVisuals() {
+    if (audio.ended) { finishVisuals(); return; }
+
+    const time = (typeof audio.currentTime === "number" && !Number.isNaN(audio.currentTime))
+      ? audio.currentTime
+      : ((performance.now() - trialStartTime) / 1000);
+
+    for (const v of visuals) {
+      if (time >= v.start && time < v.end) {
+        if (currentVisual !== v.el) {
+          hideAll();
+          if (v.el) {
+            v.el.style.display = "block";
+            if (v.el.tagName === "VIDEO") {
+              try { v.el.currentTime = 0; v.el.play().catch(()=>{}); } catch (_) {}
+            }
+          }
+          currentVisual = v.el;
+        }
+        break;
+      }
+    }
+
+    const lastEnd = visuals[visuals.length - 1]?.end ?? 0;
+    if (audio.ended || time >= lastEnd) {
+      finishVisuals();
+    } else {
+      requestAnimationFrame(updateVisuals);
+    }
+  }
+
+  // finish when audio naturally ends
+  audio.addEventListener('ended', finishVisuals, { once: true });
+
+  // fallback safety
+  const lastEndSec = visuals[visuals.length - 1]?.end || 30;
+  const fallbackMs = Math.max(30000, (lastEndSec + 3) * 1000);
+  fallbackTimer = setTimeout(() => {
+    console.warn("Fallback timer firing to finish visuals");
+    finishVisuals();
+  }, fallbackMs);
+
+  // start audio + visuals loop
+  try {
+    const p = audio.play();
+    if (p && typeof p.then === 'function') {
+      p.then(() => requestAnimationFrame(updateVisuals)).catch(() => requestAnimationFrame(updateVisuals));
+    } else {
+      requestAnimationFrame(updateVisuals);
+    }
+  } catch (err) {
+    console.warn("audio.play() threw:", err);
+    requestAnimationFrame(updateVisuals);
+  }
+
+} // <-- CLOSE playTrial
   
 function showResponseOptions() {
   updateScreen(`
@@ -1807,6 +1875,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
