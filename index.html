@@ -410,8 +410,8 @@ const AudioEngine = (() => {
   const groups = {
     narration: 0.7,  // voice MP3s
     sfx:       0.7,  // correct/wrong/animals
-    video:     10.0,  // quiet MP4s
-    music:     2.0   // #myAudio trials
+    video:     12.0,  // quiet MP4s
+    music:     6.0   // #myAudio trials
   };
 
   function groupFor(el) {
@@ -524,6 +524,8 @@ window.onload = async () => {
     try { await loadCSVData(block); }
     catch (err) { alert(`Failed to load ${block} trials: ${err.message}`); }
   }
+
+  prepareShuffledBlocks();
 
 // Shuffle helper (Fisher-Yates). Accepts an RNG function that returns [0,1).
 function shuffleArrayInPlace(arr, rng = Math.random) {
@@ -2030,6 +2032,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
