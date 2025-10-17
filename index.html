@@ -1441,10 +1441,127 @@ async function playTrial() {
 
   trialStartTime = performance.now();
 
+ async function playTrial() {
+  console.log('playTrial called; blockIndex=', currentBlockIndex, 'trialCounter=', trialCounter);
+  document.getElementById("trialControls").innerHTML = "";
+  updateScreen("");
+  hideAll();
+
+  const block = BLOCK_ORDER[currentBlockIndex];
+  const blockArray = blocks[block] || [];
+  console.log(`Block "${block}" has ${blockArray.length} rows`);
+
+  const trial = blockArray[trialCounter - 1];
+  if (!trial) {
+    console.error('No trial data found for', { block, trialCounter, blockLength: blockArray.length, trialRow: trial });
+    updateScreen(`<h2>Error: No trial data found for block ${block} trial ${trialCounter}. Please check your CSV and block setup.</h2>`);
+    // allow operator to recover
+    rebuildBaseHTML();
+    updatePlayButton();
+    return;
+  }
+
+  if (!Array.isArray(trial) || trial.length < 4) {
+    console.error('Malformed trial row (expected >=4 columns)', { block, trialCounter, trial });
+    updateScreen(`<h2>Error: Malformed trial data for ${block} trial ${trialCounter}. Please check CSV format (comma or tab separated).</h2>`);
+    return;
+  }
+
+  const [filenameRaw, originalRaw, gapRaw, testRaw] = trial;
+  const filename = String(filenameRaw).trim();
+  const originalSec = parseFloat(String(originalRaw).trim());
+  const gapSec = parseFloat(String(gapRaw).trim());
+  const testSec = parseFloat(String(testRaw).trim());
+
+  if (Number.isNaN(originalSec) || Number.isNaN(gapSec) || Number.isNaN(testSec)) {
+    console.error('Numeric fields could not be parsed for trial', { filename, originalRaw, gapRaw, testRaw });
+    updateScreen(`<h2>Error: Could not parse numeric durations for ${filename}. Check CSV numeric columns.</h2>`);
+    return;
+  }
+
+  const audio = document.getElementById("myAudio");
+  audio.src = filename;
+  audio.load();
+  currentAudioFile = filename;
+
+  // get video elements safely
+  const videoEls = visuals.filter(v => v.el && v.el.tagName && v.el.tagName.toUpperCase() === "VIDEO").map(v => v.el);
+  if (videoEls.length < 3) {
+    console.error('Expected 3 video elements but found', videoEls.length, videoEls);
+    updateScreen('<h2>Error: Missing required video elements (video1, gapVideo, video2). Please check your HTML.</h2>');
+    return;
+  }
+  const [v1, vGap, v2] = videoEls;
+
+  // Wait for metadata so .duration is valid (guard each video)
+  try {
+    await Promise.all([
+      new Promise(res => { if (v1.readyState >= 1) res(); else v1.onloadedmetadata = res; }),
+      new Promise(res => { if (vGap.readyState >= 1) res(); else vGap.onloadedmetadata = res; }),
+      new Promise(res => { if (v2.readyState >= 1) res(); else v2.onloadedmetadata = res; })
+    ]);
+  } catch (err) {
+    console.warn('Failed waiting for video metadata', err);
+  }
+
+  const video1Sec = Number(v1.duration);
+  const gapVideoSec = Number(vGap.duration);
+  const video2Sec = Number(v2.duration);
+
+  if (isNaN(video1Sec) || isNaN(gapVideoSec) || isNaN(video2Sec)) {
+    console.warn('One or more video durations are NaN:', { video1Sec, gapVideoSec, video2Sec });
+    updateScreen('<h2>Error: Video files not loaded properly. Please check your video files and try again.</h2>');
+    return;
+  }
+
+  const preStillSec = Math.max(0, originalSec - video1Sec);
+  const gapStillSec = Math.max(0, gapSec - gapVideoSec);
+  const postStillSec = Math.max(0, testSec - video2Sec);
+
+  let t = 0;
+  visuals[0].start = t; visuals[0].end = t += preStillSec;
+  visuals[1].start = t; visuals[1].end = t += video1Sec;
+  visuals[2].start = t; visuals[2].end = t += gapStillSec;
+  visuals[3].start = t; visuals[3].end = t += gapVideoSec;
+  visuals[4].start = t; visuals[4].end = t += video2Sec;
+  visuals[5].start = t; visuals[5].end = t += postStillSec;
+
+  try {
+    await waitForAudioReady(audio);
+  } catch (err) {
+    console.error("Unable to start trial — audio failed to load.", err);
+    updateScreen('<h2>Error: the audio file could not be loaded. Please try again.</h2>');
+    updatePlayButton();
+    return;
+  }
+
+  trialStartTime = performance.now();
+
+    // inside playTrial(), replace the existing updateVisuals() with this version
   let currentVisual = null;
+  let visualsDone = false;
+
+  function finishVisuals() {
+    if (visualsDone) return;
+    visualsDone = true;
+    try { hideAll(); } catch (_) {}
+    // guard in case showResponseOptions throws so visualsDone remains true
+    try { showResponseOptions(); } catch (e) { console.error("showResponseOptions failed", e); }
+  }
 
   function updateVisuals() {
-    const time = audio.currentTime;
+    // If audio has ended, finish immediately
+    if (audio.ended) {
+      finishVisuals();
+      return;
+    }
+
+    // Use audio.currentTime as primary clock; fall back to elapsed wall-time if needed.
+    const time = (typeof audio.currentTime === "number" && !Number.isNaN(audio.currentTime))
+      ? audio.currentTime
+      : ((performance.now() - trialStartTime) / 1000);
+
+    // Update which visual should be visible
     for (const v of visuals) {
       if (time >= v.start && time < v.end) {
         if (currentVisual !== v.el) {
@@ -1460,26 +1577,41 @@ async function playTrial() {
         break;
       }
     }
-    if (time < visuals[visuals.length - 1].end) {
-      requestAnimationFrame(updateVisuals);
+
+    // If we've reached the visuals' scheduled end, or the audio ended, finish.
+    const lastEnd = visuals[visuals.length - 1]?.end ?? 0;
+    if (audio.ended || time >= lastEnd) {
+      finishVisuals();
     } else {
-      hideAll();
-      showResponseOptions();
+      // continue animating
+      requestAnimationFrame(updateVisuals);
     }
   }
 
-  try {
-    console.log('Attempting to play audio:', audio.src);
-    await audio.play();
-    console.log('Audio playback started');
-    updateVisuals(); // begin visual sequence
-  } catch (err) {
-    console.warn("Audio autoplay blocked or failed:", err);
-    showAutoplayOverlay(audio, updateVisuals);
-    const overlay = document.getElementById("overlay");
-    overlay.innerHTML += '<div style="color:red;font-size:1.5em;margin-top:20px;">Audio playback was blocked. Please click the button above to start the trial.</div>';
-  }
-}
+  // After attempting to start audio playback, also listen for the audio ended event
+  audio.addEventListener('ended', () => {
+    // ensure visuals finish when audio ends
+    finishVisuals();
+  }, { once: true });
+
+  // Safety fallback: in case something else blocks progress, ensure we time out after a reasonable maximum.
+  // Use the visuals timeline (in seconds). If lastEnd is 0, fallback to 30s.
+  const lastEndSec = visuals[visuals.length - 1]?.end || 30;
+  const fallbackMs = Math.max(30000, (lastEndSec + 3) * 1000); // lastEnd + 3s, at least 30s
+  const fallbackTimer = setTimeout(() => {
+    console.warn("Fallback timer firing to finish visuals");
+    finishVisuals();
+  }, fallbackMs);
+
+  // Make finishVisuals clear the fallback timer
+  const _oldFinish = finishVisuals;
+  finishVisuals = function() {
+    if (visualsDone) return;
+    visualsDone = true;
+    try { clearTimeout(fallbackTimer); } catch(_) {}
+    try { hideAll(); } catch (_) {}
+    try { showResponseOptions(); } catch (e) { console.error("showResponseOptions failed", e); }
+  };
   
 function showResponseOptions() {
   updateScreen(`
@@ -1846,6 +1978,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
