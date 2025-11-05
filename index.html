@@ -936,13 +936,22 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
 
   const tempoPromptAudio = document.getElementById("tempoPromptAudio");
   const buttons = document.querySelectorAll('.tempo-btn');
+ const enableButtons = () => {
+    buttons.forEach(btn => (btn.disabled = false));
+  };
+
   if (tempoPromptAudio) {
-    tempoPromptAudio.play().catch(() => {});
-    tempoPromptAudio.onended = () => {
-      buttons.forEach(btn => btn.disabled = false);
-    };
+    tempoPromptAudio.onended = enableButtons;
+
+    const playPromise = tempoPromptAudio.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(err => {
+        console.warn("Unable to autoplay tempo prompt:", err);
+        enableButtons();
+      });
+    }
   } else {
-    buttons.forEach(btn => btn.disabled = false);
+    enableButtons();
   }
 
   let answered = false;
@@ -2032,6 +2041,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
