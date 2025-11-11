@@ -1697,9 +1697,9 @@ function handleResponse(choice) {
   imgs.forEach(img => img.style.pointerEvents = 'none');
 
   const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
-  // Robust gap detection: if filename includes '_gap' treat as normal
-  const isNormal = typeof currentAudioFile === 'string' && currentAudioFile.includes('_gap');
-  const correctAnswer = isNormal ? "normal" : "magical";
+  // Treat files with "_+" or "_-" in the name as magical; everything else normal
+  const isMagical = typeof currentAudioFile === 'string' && /_[+-]/.test(currentAudioFile);
+  const correctAnswer = isMagical ? "magical" : "normal";
 
   const entry = {
     participant: participantID,
@@ -2032,6 +2032,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
