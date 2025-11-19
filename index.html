@@ -196,7 +196,30 @@
       background:#eee;
       z-index:1100;
     }
-    #progressBar{height:100%;width:0;background:#4b2e83;transition:width .3s;}
+#progressBar{height:100%;width:0;background:#4b2e83;transition:width .3s;}
+
+    /* Fullscreen reminder (shows when user exits with Esc) */
+    #fullscreenReminder {
+      position: fixed;
+      right: 12px;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid #e2d8f8;
+      border-radius: 14px;
+      box-shadow: 0 12px 30px rgba(75,46,131,.18);
+      z-index: 1300;
+    }
+
+    #fullscreenReminder button {
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 1rem;
+      box-shadow: none;
+    }
 
     /* Keep trial button visible at bottom of the screen */
     #trialControls{
@@ -213,6 +236,10 @@
   
 <body>
   <div id="overlay" style="display:none;"></div>
+  <div id="fullscreenReminder" role="alert" aria-live="polite">
+    <span style="color:#4b2e83;font-weight:700;">Full screen keeps the game distraction-free.</span>
+    <button id="returnFullscreen" class="btn-primary" type="button">Go fullscreen</button>
+  </div>
   <div id="progressWrapper"><div id="progressBar"></div></div>
   <div id="visual-container">
     <div id="screen"></div>
@@ -249,6 +276,7 @@ const ANIMALS = [
 
 const BACKENDLESS_URL = "https://api.backendless.com/04D99C8B-3B22-454C-889B-5E66A5798C47/38037288-90E3-4F8A-87D6-E052FCD03D67/data/responses";
 const OFFLINE_QUEUE_KEY = "melody_offline_responses";
+let audioPrimed = false;
 
 function loadOfflineQueue() {
   if (typeof localStorage === "undefined") return [];
@@ -353,6 +381,8 @@ let animalIndex = 0;
 let currentAnimalAudio = null;
 let trialsInCurrentBlock = 0;
 let animalsShownInBlock = 0;
+let fullscreenRequested = false;
+let fullscreenEverRequested = false;
 
 function trialsFor(block) {
   const len = blocks[block] && Array.isArray(blocks[block]) ? blocks[block].length : 0;
@@ -366,6 +396,34 @@ function animalIntervalFor(block) {
 
 function totalTrialsCount() {
   return BLOCK_ORDER.reduce((sum, b) => sum + (blocks[b] && Array.isArray(blocks[b]) && blocks[b].length ? blocks[b].length : FALLBACK_TRIALS_PER_BLOCK), 0);
+}
+
+function requestFullscreenIfSupported() {
+  const el = document.documentElement;
+  if (!el || typeof el.requestFullscreen !== "function") return;
+  fullscreenEverRequested = true;
+  if (document.fullscreenElement) {
+    fullscreenRequested = true;
+    updateFullscreenReminder();
+    return;
+  }
+  if (fullscreenRequested) return;
+
+  el.requestFullscreen().then(() => {
+    fullscreenRequested = true;
+    updateFullscreenReminder();
+  }).catch(err => {
+    fullscreenRequested = false;
+    updateFullscreenReminder();
+    console.warn("Fullscreen request failed:", err);
+  });
+}
+
+function updateFullscreenReminder() {
+  const reminder = document.getElementById("fullscreenReminder");
+  if (!reminder) return;
+  const shouldShow = fullscreenEverRequested && !document.fullscreenElement;
+  reminder.style.display = shouldShow ? "flex" : "none";
 }
 
 function waitForAudioReady(audioEl) {
@@ -411,7 +469,7 @@ const AudioEngine = (() => {
     narration: 0.5,  // voice MP3s
     sfx:       0.5,  // correct/wrong/animals
     video:     12.0,  // quiet MP4s
-    music:     20.0   // #myAudio trials
+    music:     15.0   // #myAudio trials
   };
 
   function groupFor(el) {
@@ -465,7 +523,7 @@ const AudioEngine = (() => {
     }
   }
 
-  function setGroupGain(group, value) {
+function setGroupGain(group, value) {
     groups[group] = value;
     for (const rec of sources.values()) {
       if (rec.group === group) rec.gain.gain.value = value;
@@ -475,6 +533,26 @@ const AudioEngine = (() => {
 return { start, attach, attachAll, setGroupGain, groups };
 })();
 
+async function primeAudioEngine() {
+  if (audioPrimed) return;
+
+  try {
+    await AudioEngine.start();
+    AudioEngine.attachAll(document);
+
+    AudioEngine.setGroupGain("video", 5.0);
+    AudioEngine.setGroupGain("music", 3.0);
+    AudioEngine.setGroupGain("narration", 0.8);
+    AudioEngine.setGroupGain("sfx", 0.8);
+
+    audioPrimed = true;
+  } catch (err) {
+    audioPrimed = false;
+    console.warn("Failed to prime audio engine", err);
+    throw err;
+  }
+}
+  
 async function saveResponse(entry, { maxAttempts = 3, retryDelayMs = 500 } = {}) {
   let lastError = null;
 
@@ -497,22 +575,32 @@ window.addEventListener("online", () => {
 });
 
 window.onload = async () => {
-  // Prime WebAudio on first gesture (click/touch/key)
-  const prime = async () => {
-    await AudioEngine.start();
-    AudioEngine.attachAll(document);               // wire everything now that ctx is allowed
+  flushOfflineQueue().catch(err => console.warn("Failed to flush offline queue on load", err));
 
-    AudioEngine.setGroupGain("video", 5.0); 
-    AudioEngine.setGroupGain("music", 3.0);
-    AudioEngine.setGroupGain("narration", 0.8);
-    AudioEngine.setGroupGain("sfx", 0.8);
-  };
+  const primeHandler = () => primeAudioEngine().catch(err => console.warn("Prime handler failed", err));
+  window.addEventListener("click", primeHandler, { once: true });
+  window.addEventListener("touchend", primeHandler, { once: true });
+  window.addEventListener("keydown", primeHandler, { once: true });
 
-    flushOfflineQueue().catch(err => console.warn("Failed to flush offline queue on load", err));
+  const fullscreenButton = document.getElementById("returnFullscreen");
+  if (fullscreenButton) {
+    fullscreenButton.addEventListener("click", () => {
+      requestFullscreenIfSupported();
+      updateFullscreenReminder();
+    });
+  }
 
-  window.addEventListener("click", prime, { once: true });
-  window.addEventListener("touchend", prime, { once: true });
-  window.addEventListener("keydown", prime, { once: true });
+  const fullscreenHandler = () => requestFullscreenIfSupported();
+  window.addEventListener("click", fullscreenHandler, { once: true });
+  window.addEventListener("touchend", fullscreenHandler, { once: true });
+  window.addEventListener("keydown", fullscreenHandler, { once: true });
+
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) fullscreenRequested = false;
+    updateFullscreenReminder();
+  });
+
+  updateFullscreenReminder();
 
   while (!participantID) {
     participantID = prompt("Enter your Participant ID:");
@@ -617,7 +705,7 @@ function prepareShuffledBlocks({ useSeed = true } = {}) {
   // Preload animal sounds (not in DOM) — safe to queue before gesture
   ANIMALS.forEach(a => { a.audio = new Audio(a.sound); AudioEngine.attach(a.audio); });
 
-  showIntroScreen();
+  showVolumeCheckScreen();
 };
 
 function updateScreen(html, background=null){
@@ -669,6 +757,62 @@ async function loadCSVData(blockType) {
   console.log(`Loaded ${parsed.length} trials for ${blockType}`);
 }
 
+function showVolumeCheckScreen() {
+  updateScreen(`
+    <div class="response-wrapper">
+      <div class="response-screen">
+        <h1>Sound Check</h1>
+        <p style="font-size:1.2em;line-height:1.6;">
+          Parents or caregivers: please adjust the device volume so your child can hear clearly.
+          Tap Play to hear a short sample, then continue once the sound level feels right.
+        </p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+          <button id="playSample" class="btn-primary">Play sample</button>
+          <button id="continueAfterVolume" class="btn-primary" disabled>Sounds good</button>
+        </div>
+        <audio id="volumeSample" src="SoundCheck.mp3" preload="auto"></audio>
+      </div>
+    </div>
+  `);
+
+  const sample = document.getElementById("volumeSample");
+  const playBtn = document.getElementById("playSample");
+  const continueBtn = document.getElementById("continueAfterVolume");
+
+  AudioEngine.attach(sample);
+
+  const enableContinue = () => { continueBtn.disabled = false; };
+  sample.addEventListener("ended", enableContinue);
+  sample.addEventListener("error", enableContinue);
+
+ playBtn.addEventListener("click", async () => {
+    requestFullscreenIfSupported();
+    playBtn.disabled = true;
+    continueBtn.disabled = true;
+    try {
+      await primeAudioEngine();
+      sample.currentTime = 0;
+      await sample.play();
+    } catch (err) {
+      console.warn("Sample playback failed", err);
+      enableContinue();
+    } finally {
+      playBtn.disabled = false;
+    }
+  });
+
+  continueBtn.addEventListener("click", async () => {
+    requestFullscreenIfSupported();
+    continueBtn.disabled = true;
+    try {
+      await primeAudioEngine();
+    } catch (err) {
+      console.warn("Failed to confirm priming on continue", err);
+    }
+    showIntroScreen();
+  });
+}
+
 function showIntroScreen() {
   updateScreen(`
     <div style="display:flex;align-items:center;justify-content:center;height:100%;padding:40px;box-sizing:border-box;">
@@ -689,10 +833,11 @@ function showIntroScreen() {
     </div>
   `);
 
-  const introAudio = document.getElementById("introAudio");
+ const introAudio = document.getElementById("introAudio");
   const continueBtn = document.getElementById("continueIntro");
 
   continueBtn.addEventListener("click", async () => {
+    requestFullscreenIfSupported();
     continueBtn.disabled = true;
     try {
       await introAudio.play();
@@ -752,6 +897,7 @@ function showNarrationScreen() {
   const audio = document.getElementById("introNarration3");
 
   button.addEventListener("click", async () => {
+    requestFullscreenIfSupported();
     button.disabled = true;
     try {
       await audio.play();
@@ -911,7 +1057,7 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
   updateScreen(`
     <div class="response-wrapper">
       <div class="response-screen">
-        <audio id="" src="tempo_prompt.mp3"></audio>
+        <audio id="tempoPromptAudio" src="tempo_prompt.mp3"></audio>
         <h1>How did the music sound?</h1>
         <div class="response-options">
           <button class="tempo-btn" data-choice="fast" disabled>
@@ -936,7 +1082,7 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
 
   const tempoPromptAudio = document.getElementById("tempoPromptAudio");
   const buttons = document.querySelectorAll('.tempo-btn');
- if (tempoPromptAudio) {
+  if (tempoPromptAudio) {
     tempoPromptAudio.play().catch(() => {});
     tempoPromptAudio.onended = () => {
       buttons.forEach(btn => btn.disabled = false);
@@ -1345,7 +1491,8 @@ function showRealTrialsIntro() {
   const startBtn = document.getElementById("startRealTrials");
   const audio = document.getElementById("realInstructionsAudio");
 
-  playBtn.addEventListener("click", async () => {
+playBtn.addEventListener("click", async () => {
+    requestFullscreenIfSupported();
     playBtn.disabled = true;
     try {
       await audio.play();
@@ -1356,8 +1503,10 @@ function showRealTrialsIntro() {
       startBtn.style.display = "inline-block";
     };
   });
-
-  startBtn.addEventListener("click", startRealTrials);
+startBtn.addEventListener("click", () => {
+    requestFullscreenIfSupported();
+    startRealTrials();
+  });
 }
 
 async function startRealTrials() {
@@ -1418,7 +1567,7 @@ function updatePlayButton() {
   const block = BLOCK_ORDER[currentBlockIndex];
   const trialControls = document.getElementById("trialControls");
   const total = trialsFor(block);
-  trialControls.innerHTML = `<button id="playButton" class="btn-primary">Start ${block.toUpperCase()} Trial ${trialCounter} of ${total}</button>`;
+  trialControls.innerHTML = `<button id="playButton" class="btn-primary">${block.toUpperCase()} Trial ${trialCounter} of 32, GO!</button>`;
   document.getElementById("playButton").addEventListener("click", playTrial);
 }
 function hideAll() {
@@ -1697,10 +1846,10 @@ function handleResponse(choice) {
   imgs.forEach(img => img.style.pointerEvents = 'none');
 
   const reactionTimeSec = (performance.now() - trialStartTime) / 1000;
-  // Treat files with "_+" or "_-" in the name as magical; everything else normal
+ // Treat files with "_+" or "_-" in the name as magical; everything else normal
   const isMagical = typeof currentAudioFile === 'string' && /_[+-]/.test(currentAudioFile);
   const correctAnswer = isMagical ? "magical" : "normal";
-
+  
   const entry = {
     participant: participantID,
     session: sessionID,
@@ -1816,7 +1965,7 @@ function showAnimalScreen(callback) {
 
   const btn = document.getElementById("continueAnimal");
   const countdownEl = document.getElementById("animalCountdown");
-  let secondsLeft = 20;
+  let secondsLeft = 10;
   btn.disabled = true;
 
   // Countdown timer
@@ -2032,6 +2181,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
