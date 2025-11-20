@@ -258,7 +258,7 @@
 <script>  
 // Fallback and dynamic trial handling
 const FALLBACK_TRIALS_PER_BLOCK = 16;
-const BLOCK_ORDER=["pitch","tempo"];
+const BLOCK_ORDER=["tempo","pitch"];
 const BLOCK_FILES = { tempo: "tempo_trials.csv", pitch: "pitch_trials.csv" };
 const ANIMALS_PER_BLOCK = 3;
 const REAL_BLOCK_ANIMAL_TRIALS = {
@@ -366,7 +366,7 @@ async function postResponseToServer(entry) {
 }
 
 let pitchPracticeCompleted = false;
-let tempoPracticeCompleted = false;
+
 let blocks={tempo:[],pitch:[]};
 let currentBlockIndex=0;
 let trialCounter=1;
@@ -904,7 +904,7 @@ function showNarrationScreen() {
     } catch (err) {
       console.warn("Audio play failed:", err);
     }
-    audio.onended = () => setTimeout(runPitchDemo, 1500);
+    audio.onended = () => setTimeout(showFastIntro, 1500);
   });
 }
 
@@ -1013,9 +1013,8 @@ function runTempoPractice() {
 
   function nextPractice() {
     responseSubmitted = false; // Reset for each practice trial
-   if (i >= practiceTrials.length) {
-      tempoPracticeCompleted = true;
-      currentBlockIndex = 1; // set tempo block
+    if (i >= practiceTrials.length) {
+      currentBlockIndex = 0; // set tempo block
       trialCounter = 1;
       showRealTrialsIntro();
       return;
@@ -1164,6 +1163,7 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
           answered = false;
           buttons.forEach(b => b.disabled = false);
         });
+    });
   });
 }
   
@@ -1448,15 +1448,15 @@ function showPitchInstructions() {
     const audio = document.getElementById("pitchInstructions");
     audio.play().then(() => {
       audio.onended = () => setTimeout(() => {
-       pitchPracticeCompleted = true;
-        currentBlockIndex = 0;
+        pitchPracticeCompleted = true;
+        currentBlockIndex = 1;
         trialCounter = 1;
         startRealTrials();
       }, 1000);
     }).catch(err => {
       console.warn("Autoplay issue:", err);
       pitchPracticeCompleted = true;
-      currentBlockIndex = 0;
+      currentBlockIndex = 1;
       trialCounter = 1;
       startRealTrials();
     });
@@ -1891,13 +1891,11 @@ function handleResponse(choice) {
         && (animalsShownInBlock < ANIMALS_PER_BLOCK);
     }
 
-   const proceed = () => {
+    const proceed = () => {
       if (currentBlockIndex >= BLOCK_ORDER.length) {
         showParty();
       } else if (BLOCK_ORDER[currentBlockIndex] === "pitch" && !pitchPracticeCompleted) {
         runPitchDemo();
-      } else if (BLOCK_ORDER[currentBlockIndex] === "tempo" && !tempoPracticeCompleted) {
-        showFastIntro();
       } else {
         rebuildBaseHTML();
         updatePlayButton();
@@ -2183,6 +2181,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
