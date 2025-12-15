@@ -1168,13 +1168,34 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
 }
   
 function runPitchDemo() {
-  updateScreen(`
+updateScreen(`
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:white;padding:40px;box-sizing:border-box;">
       <p style="font-size:1.5em;line-height:1.6;max-width:800px;text-align:center;">
-        <strong>6. Pitch Practice Trials</strong><br><br>
+        <strong>Pitch Practice Trials</strong><br><br>
         Now, the magical elevator is going to change how high or low the music sounds.<br>
         Ready? Listen to this song and see how the music gets higher when Melody rides the elevator up to the 2nd floor.
       </p>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:center;margin:18px 0;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;max-width:220px;padding:14px;border-radius:16px;background:#f5ecff;box-shadow:0 10px 18px rgba(75,46,131,.12);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <img src="magical.png" alt="Magical elevator" style="height:56px;width:auto;border-radius:12px;" />
+            <strong style="color:#4b2e83;">Magical elevator</strong>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <img src="high_icon.jpg" alt="Higher" style="height:46px;width:46px;border-radius:12px;object-fit:cover;" />
+            <img src="low_icon.jpg" alt="Lower" style="height:46px;width:46px;border-radius:12px;object-fit:cover;" />
+          </div>
+          <span style="font-size:1.05em;color:#4b2e83;text-align:center;">Music can go higher <em>or</em> lower &rarr; choose magical</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;max-width:220px;padding:14px;border-radius:16px;background:#e8f7ff;box-shadow:0 10px 18px rgba(0,128,192,.12);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <img src="normal.jpg" alt="Normal elevator" style="height:56px;width:auto;border-radius:12px;object-fit:cover;" />
+            <strong style="color:#006a99;">Normal elevator</strong>
+          </div>
+          <img src="same_icon.jpg" alt="Same pitch" style="height:46px;width:46px;border-radius:12px;object-fit:cover;" />
+          <span style="font-size:1.05em;color:#006a99;text-align:center;">Music stays the same &rarr; choose normal</span>
+        </div>
+      </div>
       <audio id="pitchIntroNarration" src="PT_PITCH_INTRO.mp3" preload="auto"></audio>
     </div>
   `);
@@ -2181,6 +2202,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
