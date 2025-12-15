@@ -159,12 +159,20 @@
     box-shadow: 0 8px 26px rgba(75,46,131,.16);
   }
 
-  .tempo-btn .option-icon {
+ .tempo-btn .option-icon {
     width: clamp(48px, 12vw, 72px);
     height: clamp(48px, 12vw, 72px);
     object-fit: contain;
   }
 
+  .tempo-btn .elevator-badge {
+    width: clamp(90px, 16vw, 140px);
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(75,46,131,.14);
+    background: white;
+  }
   .tempo-btn span {
     font-size: clamp(1.1rem, 2.8vw, 1.6rem);
     letter-spacing: 0.02em;
@@ -1060,17 +1068,20 @@ function showTempoResponseScreen(correctAnswer, callback, videoFile, trialNumber
         <audio id="tempoPromptAudio" src="tempo_prompt.mp3"></audio>
         <h1>How did the music sound?</h1>
         <div class="response-options">
-          <button class="tempo-btn" data-choice="fast" disabled>
+         <button class="tempo-btn" data-choice="fast" disabled>
             <img src="fast_icon.jpg" alt="Fast" class="option-icon" />
             <span>Fast</span>
+            <img src="magical.png" alt="Magical elevator" class="elevator-badge" />
           </button>
           <button class="tempo-btn" data-choice="slow" disabled>
             <img src="slow_icon.jpg" alt="Slow" class="option-icon" />
             <span>Slow</span>
+            <img src="magical.png" alt="Magical elevator" class="elevator-badge" />
           </button>
           <button class="tempo-btn" data-choice="same" disabled>
             <img src="same_icon.jpg" alt="Same" class="option-icon" />
             <span>Same</span>
+            <img src="normal.jpg" alt="Normal elevator" class="elevator-badge" />
           </button>
         </div>
         <audio id="correctSound" src="correct_feedback.mp3"></audio>
@@ -1335,14 +1346,17 @@ function showPitchResponseScreen(correctAnswer, callback, videoFile, trialNumber
           <button class="tempo-btn" data-choice="high" disabled>
             <img src="high_icon.jpg" alt="High" class="option-icon" />
             <span>High</span>
+            <img src="magical.png" alt="Magical elevator" class="elevator-badge" />
           </button>
           <button class="tempo-btn" data-choice="low" disabled>
             <img src="low_icon.jpg" alt="Low" class="option-icon" />
             <span>Low</span>
+            <img src="magical.png" alt="Magical elevator" class="elevator-badge" />
           </button>
           <button class="tempo-btn" data-choice="same" disabled>
             <img src="same_icon.jpg" alt="Same" class="option-icon" />
             <span>Same</span>
+            <img src="normal.jpg" alt="Normal elevator" class="elevator-badge" />
           </button>
         </div>
         <audio id="correctSound" src="correct_feedback.mp3"></audio>
@@ -2202,6 +2216,7 @@ function runScreenCleanup() {
 </script>
 </body>
 </html>
+
 
 
 
